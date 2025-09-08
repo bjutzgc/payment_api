@@ -1,0 +1,17 @@
+*.pyc
+slots.cfg
+slots.*cfg.v2
+.idea/*
+*.log
+*.o
+*.out
+settings_db.py
+web_config.py
+.vscode
+.DS_Store
+__pycache__
+node_modules
+*slots-of-vegas-adminsdk.json
+*dragon_bq_acc.json
+.codegpt
+*.db
