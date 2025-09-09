@@ -1,7 +1,7 @@
 #!/bin/bash
 # 超简单的API测试脚本 - 使用curl命令
 
-BASE_URL="http://localhost:8000"
+BASE_URL="http://tester.boledragon.com:8077"
 
 echo "🚀 开始运行超简单API测试"
 echo "=================================================="
@@ -30,14 +30,14 @@ echo ""
 echo "=== 每日奖励 ==="
 curl -X POST "$BASE_URL/api/v1/daily_gift" \
   -H "Content-Type: application/json" \
-  -d '{"uid": "test123"}' | jq .
+  -d '{"uid": "123"}' | jq .
 echo ""
 
 # 5. 商城信息
 echo "=== 商城信息 ==="
 curl -X POST "$BASE_URL/api/v1/store/items" \
   -H "Content-Type: application/json" \
-  -d '{"uid": "test123"}' | jq .
+  -d '{"uid": "123"}' | jq .
 echo ""
 
 # 6. 支付成功（需要token）
@@ -91,7 +91,7 @@ fi
 echo "=== 历史订单 ==="
 curl -X POST "$BASE_URL/api/v1/orders/history" \
   -H "Content-Type: application/json" \
-  -d '{"uid": "test123"}' | jq .
+  -d '{"uid": "123"}' | jq .
 echo ""
 
 echo "✅ 所有测试完成!"

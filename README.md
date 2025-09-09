@@ -1,115 +1,176 @@
-# Payment API - FastAPI版本
+# Payment API - 游戏支付系统
 
-这是从Django REST Framework转换而来的FastAPI版本的支付API系统。
+基于 FastAPI 构建的现代化游戏支付API系统，专为移动游戏应用设计，提供完整的用户登录、商品购买、支付处理和订单管理功能。
 
-## 技术栈
+## ✨ 特性亮点
 
-- **FastAPI**: 现代、快速的Web框架
-- **SQLModel**: 基于Pydantic和SQLAlchemy的ORM
-- **Redis**: 缓存和会话存储
-- **Pydantic**: 数据验证和序列化
-- **Uvicorn**: ASGI服务器
+- 🚀 **高性能异步架构** - 基于 FastAPI + SQLModel + Redis 构建
+- 🔐 **多平台登录支持** - Facebook、Google、Apple、邮箱、短信验证
+- 💰 **智能商品系统** - 根据用户等级和金币动态展示商品
+- 🎯 **精准奖励计算** - 首充识别、等级权限、动态奖励发放
+- 🔄 **可靠支付回调** - 幂等性保证、事务安全、状态管理
+- 📊 **完整订单管理** - 支付历史、失败记录、数据分析
+- 🎁 **每日奖励系统** - 签到奖励、连续登录激励
+- 📖 **自动API文档** - Swagger UI 和 ReDoc 支持
 
-## 项目结构
+## 🛠 技术栈
+
+### 核心框架
+- **[FastAPI](https://fastapi.tiangolo.com/)** `^0.104.1` - 现代化异步Web框架
+- **[SQLModel](https://sqlmodel.tiangolo.com/)** `^0.0.14` - 类型安全的ORM
+- **[Pydantic](https://pydantic.dev/)** `^2.5.0` - 数据验证和序列化
+- **[Uvicorn](https://www.uvicorn.org/)** - ASGI服务器
+
+### 数据存储
+- **MySQL** - 主数据库 (通过 aiomysql/PyMySQL)
+- **Redis** `^5.0.1` - 缓存和会话存储
+- **SQLite** - 开发环境备选
+
+### 安全认证
+- **JWT Token** - JSON Web Token 认证
+- **python-jose** - JWT 加密解密
+- **passlib** - 密码哈希处理
+
+### 开发工具
+- **pytest** - 单元测试框架
+- **httpx** - HTTP客户端测试
+- **alembic** - 数据库迁移
+
+## 📁 项目结构
 
 ```
-src/
-├── __init__.py
-├── main.py              # FastAPI主应用
-├── config.py            # 配置管理
-├── database.py          # 数据库连接配置
-├── models.py            # SQLModel数据模型
-├── schemas.py           # Pydantic输入/输出模式
-├── constants.py         # 常量定义
-├── redis_service.py     # Redis服务
-├── game_service.py      # 游戏业务逻辑
-└── routers/
-    ├── __init__.py
-    ├── api_routes.py    # 主要API路由
-    └── test_routes.py   # 测试路由
+.
+├── src/                        # 源代码目录
+│   ├── routers/                # 路由模块
+│   │   ├── payment_routes.py   # 支付相关API路由
+│   │   └── test_routes.py      # 测试用路由
+│   ├── schemas/                # Pydantic 数据模式
+│   │   └── payment_schemas.py  # 支付相关数据模型
+│   ├── service/                # 业务逻辑服务层
+│   │   ├── db_service.py       # 数据库会话管理
+│   │   ├── game_service.py     # 游戏业务逻辑
+│   │   ├── login_service.py    # 登录服务
+│   │   ├── payment_service.py  # 支付处理核心逻辑
+│   │   └── redis_service.py    # Redis连接管理
+│   ├── constants.py            # 常量定义
+│   ├── item_configs.py         # 商品配置与奖励规则
+│   ├── main.py                 # FastAPI应用主入口
+│   ├── models.py               # SQLModel 数据模型
+│   ├── web_config_local.py     # 本地开发环境配置
+│   └── web_config_online.py    # 生产环境配置
+├── test/                       # 测试脚本
+│   ├── basic_test.py           # 基础功能测试
+│   ├── curl_test.sh            # curl 命令测试
+│   └── test_api.py             # API接口测试
+├── requirements.txt            # Python依赖
+├── run.py                      # 启动脚本
+└── README.md                   # 项目文档
 ```
 
-## 快速开始
+## 🚀 快速开始
 
-### 1. 安装依赖
+### 环境要求
+- Python 3.8+
+- MySQL 5.7+ 或 SQLite
+- Redis 5.0+
+
+### 1. 克隆项目
+
+```bash
+git clone <repository-url>
+cd payment_api
+```
+
+### 2. 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境
+### 3. 配置环境
 
-复制环境变量示例文件并修改配置：
+根据运行环境修改配置文件：
 
-```bash
-cp .env.example .env
-```
+- **开发环境**: 编辑 `src/web_config_local.py`
+- **生产环境**: 编辑 `src/web_config_online.py`
 
-编辑 `.env` 文件，配置数据库和Redis连接。
-
-### 3. 启动应用
+### 4. 启动服务
 
 ```bash
+# 开发环境 (自动重载)
 python run.py
+
+# 或直接使用 uvicorn
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 生产环境 (多进程)
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-或者直接使用uvicorn：
+### 5. 验证服务
 
 ```bash
-uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+# 健康检查
+curl http://localhost:8000/health
+
+# 查看API文档
+open http://localhost:8000/docs
 ```
 
-### 4. 访问API文档
+## 📚 API 接口概览
 
-启动后访问以下地址查看API文档：
+### 🔐 认证相关
+- `POST /api/v1/token` - 获取访问令牌
+- `GET /api/v1/login` - 用户登录
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### 🛒 商城系统
+- `GET /api/v1/store/items` - 获取商品列表
+- `POST /api/v1/payment/success` - 支付成功回调
+- `POST /api/v1/payment/failure` - 支付失败记录
 
-## API端点
+### 📋 订单管理
+- `GET /api/v1/orders/history` - 订单历史查询
 
-### 主要端点
+### 🎁 奖励系统
+- `POST /api/v1/daily_gift` - 每日奖励领取
 
-- `GET/POST /` - 首页
-- `GET/POST /mytest` - 测试接口
-- `GET/POST /user_msg` - 用户消息
-- `GET/POST /activity` - 活动信息
-- `GET/POST /user_purchase` - 用户购买
-
-### 测试端点
-
-- `GET /test/test_user_msg` - 测试用户消息
-- `GET /test/test_activity` - 测试活动
-- `GET /test/test_user_purchase` - 测试购买
-
-### 健康检查
-
+### 🔧 系统接口
 - `GET /health` - 健康检查
+- `GET /docs` - API文档 (Swagger UI)
+- `GET /redoc` - API文档 (ReDoc)
 
-## 数据库配置
+## 💡 核心业务流程
 
-### SQLite (默认)
+### 用户登录流程
+1. 客户端调用 `/api/v1/token` 获取JWT令牌
+2. 使用令牌调用 `/api/v1/login` 完成登录
+3. 服务端返回用户信息（ID、等级、金币等）
 
-```env
-DATABASE_URL=sqlite:///./payment_api.db
+### 商品购买流程
+1. 客户端请求 `/api/v1/store/items` 获取商品列表
+2. 用户选择商品，发起支付
+3. 支付平台回调 `/api/v1/payment/success`
+4. 系统更新用户金币，发放奖励到收件箱
+
+### 权限与奖励规则
+- **普通用户** (金币 < 10000 或 等级 < 99.99): 可购买前6个商品
+- **高级用户** (金币 ≥ 10000 且 等级 ≥ 99.99): 可购买全部8个商品
+- **首充用户**: 购买任意商品额外获得 10%-25% 奖励
+
+## 🗄 数据库配置
+
+### MySQL (推荐)
+```python
+# src/web_config_local.py 或 src/web_config_online.py
+DATABASE_URL = "mysql+aiomysql://username:password@localhost:3306/payment_db"
 ```
 
-### PostgreSQL
-
-```env
-DATABASE_URL=postgresql+asyncpg://user:password@localhost/dbname
+### SQLite (开发环境)
+```python
+DATABASE_URL = "sqlite:///./payment_api.db"
 ```
 
-### MySQL
-
-```env
-DATABASE_URL=mysql+aiomysql://user:password@localhost/dbname
-```
-
-## Redis配置
-
-在 `.env` 文件中配置Redis连接，或者在 `src/config.py` 中直接修改：
-
+### Redis 配置
 ```python
 REDIS_CONF = {
     "forever_new_user": {
@@ -118,126 +179,239 @@ REDIS_CONF = {
         "db_id": 0
     },
     "forever_new_fb": {
-        "host": "localhost", 
+        "host": "localhost",
         "port": 6379,
         "db_id": 1
     }
 }
 ```
 
-## 从Django迁移的主要变化
+## 🧪 测试
 
-1. **ORM**: Django ORM → SQLModel
-2. **序列化**: Django REST Framework Serializers → Pydantic Schemas
-3. **路由**: Django URL patterns → FastAPI routers
-4. **中间件**: Django middleware → FastAPI middleware
-5. **配置**: Django settings → Pydantic settings
-6. **异步支持**: 原生异步支持
 
-## 开发注意事项
 
-1. 所有API端点支持自动的请求/响应验证
-2. 自动生成的API文档
-3. 内置的依赖注入系统
-4. 更好的类型提示和IDE支持
-5. 更高的性能
-
-## 测试
+运行测试套件：
 
 ```bash
-pytest
+# 运行所有测试
+pytest test/
+
+# 运行特定测试文件
+pytest test/test_api.py -v
+
+# 运行并查看覆盖率
+pytest --cov=src test/
 ```
 
-## 📚 详细文档
+### 快速API测试
 
-我们为项目提供了完整的文档集合，位于 `docs/` 目录：
-
-- **[📋 项目结构与环境说明](docs/PROJECT_STRUCTURE.md)** - 项目架构、技术栈和环境配置
-- **[🧪 API测试文档](docs/API_TESTING.md)** - 完整的API测试指南和示例
-- **[🚀 部署指南](docs/DEPLOYMENT_GUIDE.md)** - 生产环境部署完整方案
-- **[💻 开发指南](docs/DEVELOPMENT_GUIDE.md)** - 开发规范和最佳实践
-- **[📖 API接口参考](docs/API_REFERENCE.md)** - 详细的接口文档和SDK示例
-- **[📚 文档中心](docs/README.md)** - 文档导航和使用指南
-
-## 🚀 快速部署
-
-### 开发环境
 ```bash
-# 快速启动
-python run.py
+# 使用内置测试脚本
+python test/quick_test.py
 
-# 或使用uvicorn
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# 使用curl测试脚本
+bash test/curl_test.sh
 ```
 
-### 生产环境
+### 手动测试示例
+
 ```bash
-# 生产部署
-uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4
-```
-
-> 📖 **详细部署说明**: 请参考 [部署指南](docs/DEPLOYMENT_GUIDE.md) 获取完整的部署方案。
-
-## 🧪 API测试
-
-### 快速测试
-```bash
-# 健康检查
+# 1. 健康检查
 curl -X GET "http://localhost:8000/health"
 
-# 获取Token
+# 2. 获取Token
 curl -X POST "http://localhost:8000/api/v1/token" \
   -H "Content-Type: application/json" \
   -d '{"appId": "com.funtriolimited.slots.casino.free"}'
 
-# 测试登录
-curl -X GET "http://localhost:8000/api/v1/login?loginType=1&loginId=test123"
+# 3. 用户登录
+curl -X GET "http://localhost:8000/api/v1/login?loginType=1&loginId=test123" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+
+# 4. 获取商品列表
+curl -X GET "http://localhost:8000/api/v1/store/items" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
-> 🧪 **完整测试指南**: 请参考 [API测试文档](docs/API_TESTING.md) 获取详细的测试方法。
+## 🚀 部署指南
 
-## 💡 主要特性
+### 开发环境部署
 
-### 🔐 安全认证
-- JWT Token认证（3小时有效期）
-- 多种登录方式支持（Facebook、Google、Apple等）
-- 安全的API访问控制
+1. **设置环境变量**
+   ```bash
+   export ENV=local  # 使用本地开发配置
+   ```
 
-### 🛒 商城系统
-- 动态商品配置
-- 首充识别和奖励
-- 用户等级权限控制
+2. **启动开发服务器**
+   ```bash
+   python run.py
+   ```
 
-### 💰 支付处理
-- 支付成功/失败处理
-- 动态奖励计算
-- 订单历史管理
+### 生产环境部署
 
-### 🔧 技术优势
-- 异步数据库操作
-- Redis缓存支持
-- 多数据库配置
-- 自动API文档生成
+1. **设置环境变量**
+   ```bash
+   export ENV=online  # 使用生产环境配置
+   ```
 
-## 🤝 贡献指南
+2. **多进程启动**
+   ```bash
+   uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4
+   ```
 
-欢迎贡献代码和改进建议！
+3. **使用Gunicorn + Uvicorn**
+   ```bash
+   gunicorn src.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+   ```
 
-1. Fork 项目仓库
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
+### Docker部署
 
-> 💻 **开发规范**: 请参考 [开发指南](docs/DEVELOPMENT_GUIDE.md) 了解详细的开发规范。
+项目包含完整的Docker配置：
 
-## 📞 支持与反馈
+```bash
+# 构建镜像
+docker build -t payment-api .
 
-- **API文档**: http://localhost:8000/docs (Swagger UI)
-- **问题报告**: [GitHub Issues](https://github.com/your-org/payment_api/issues)
-- **功能建议**: [GitHub Discussions](https://github.com/your-org/payment_api/discussions)
-- **技术支持**: 查看 [文档中心](docs/README.md) 获取帮助
+# 运行容器
+docker run -d -p 8000:8000 --name payment-api-container payment-api
+
+# 使用docker-compose
+docker-compose up -d
+```
+
+### 反向代理配置 (Nginx)
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+## 🔒 安全配置
+
+### JWT配置
+- Token有效期：3小时
+- 支持的登录类型：Facebook(1)、Google(2)、Apple(3)、邮箱(4)、短信(5)
+- 安全的密钥管理和Token刷新机制
+
+### 生产环境安全检查清单
+- [ ] 修改默认JWT密钥
+- [ ] 启用HTTPS
+- [ ] 配置CORS白名单
+- [ ] 设置速率限制
+- [ ] 启用请求日志
+- [ ] 定期备份数据库
+- [ ] 监控异常访问
+
+## 📊 监控与日志
+
+### 健康检查
+```bash
+# 服务状态检查
+curl http://localhost:8000/health
+
+# 响应示例
+{
+  "status": "healthy",
+  "message": "Payment API is running"
+}
+```
+
+### 日志配置
+- **开发环境**: INFO级别，控制台输出
+- **生产环境**: WARNING级别，文件输出
+- 支持结构化日志和请求追踪
+
+## 🔧 故障排查
+
+### 常见问题
+
+**1. 数据库连接失败**
+```bash
+# 检查数据库连接
+mysql -h localhost -u username -p
+
+# 检查配置文件
+cat src/web_config_local.py | grep DATABASE_URL
+```
+
+**2. Redis连接问题**
+```bash
+# 测试Redis连接
+redis-cli ping
+
+# 检查Redis配置
+cat src/web_config_local.py | grep REDIS_CONF
+```
+
+**3. 端口占用**
+```bash
+# 查看端口占用
+lsof -i :8000
+
+# 杀死占用进程
+kill -9 <PID>
+```
+
+**4. 启动失败**
+- 检查Python版本 (需要3.8+)
+- 确认所有依赖已安装
+- 查看错误日志获取详细信息
+
+## 🤝 开发指南
+
+### 代码风格
+- 遵循PEP 8代码规范
+- 使用类型注解
+- 编写完整的文档字符串
+
+### 提交代码
+1. Fork项目仓库
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 创建Pull Request
+
+### API开发规范
+- 使用Pydantic模型进行数据验证
+- 遵循RESTful设计原则
+- 提供详细的响应示例
+- 添加适当的错误处理
+
+## 📞 技术支持
+
+### 文档资源
+- **API文档**: http://localhost:8000/docs (开发环境)
+- **交互式文档**: http://localhost:8000/redoc
+- **技术博客**: [FastAPI官方文档](https://fastapi.tiangolo.com/)
+
+### 获取帮助
+- **问题报告**: 在GitHub Issues中提交
+- **功能建议**: 通过GitHub Discussions讨论
+- **技术交流**: 查看项目Wiki获取更多信息
+
+### 版本历史
+- **v1.0.0**: 初始版本，基础支付功能
+- **v1.1.0**: 添加多平台登录支持
+- **v1.2.0**: 增强商品管理和奖励系统
 
 ## 📄 许可证
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+---
+
+**构建时间**: 2024年
+**技术栈**: FastAPI + SQLModel + Redis + MySQL
+**维护状态**: 🟢 积极维护
+
+> 💡 **提示**: 如果您在使用过程中遇到任何问题，请先查看[故障排查](#-故障排查)部分，或者在GitHub Issues中搜索相关问题。
