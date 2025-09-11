@@ -20,7 +20,7 @@ from ..constants import APP_ID
 from ..service.login_service import find_user_by_login, validate_login_params, LoginType as ServiceLoginType
 from ..service.payment_service import process_payment_success, process_payment_failure, get_payment_history
 from ..item_configs import get_item_tokens, get_item_name, get_all_items, get_available_store_items
-from ..service.game_service import get_user_object
+from ..service.game_service import get_user_object, get_total_purchase
 
 logger = logging.getLogger("payment_api")
 
@@ -167,6 +167,11 @@ async def login(
                 status_code=0,
                 msg="用户不存在"
             )
+        user_total_purchase = get_total_purchase(user.id)
+        show = 0
+        if 300 < user_total_purchase < 2000:
+            if (user.id // 10000) % 10 == 0:
+                show = 1 
         
         # 用户存在，生成成功登录响应
         response = LoginResponse(
@@ -176,7 +181,8 @@ async def login(
             level=user.level,
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
-            msg="登录成功"
+            msg="登录成功",
+            show=show,
         )
         
         logger.info(f"Login successful - UserID: {user.id}, LoginType: {loginType}")

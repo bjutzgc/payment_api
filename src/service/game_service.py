@@ -302,7 +302,7 @@ def send_reward_to_inbox(pkg: str, uid: int, tokens: int, reason: str = "购买�
         with get_session(pkg) as session:
 
 
-            extra_data = { "attach_list": [[18, tokens]]}
+            extra_data = { "attach_list": [[18, tokens, 1]]}
             
             count = 0
             valid_time_sec = -1  # -1表示永久有效

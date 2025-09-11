@@ -12,6 +12,7 @@ class UserBase(SQLModel):
     user_name: Optional[str] = Field(default=None, description="用户名")
     level: Optional[int] = Field(default=None, description="用户等级")
     avatar_url: Optional[str] = Field(default=None, description="头像URL")
+    show: Optional[int] = Field(default=None, description="是否展示商店")
 
 
 class OrderBase(SQLModel):
