@@ -125,44 +125,44 @@ async def get_token(request: TokenRequest):
 
 @router.get("/login", response_model=LoginResponse)
 async def login(
-    loginType: int = Query(..., description="登录类型: 1=facebook, 2=google, 3=usertoken, 4=email, 5=sms, 6=apple"),
-    loginId: str = Query(..., description="登录ID"),
-    loginCode: Optional[str] = Query(None, description="验证码(邮箱/SMS登录时需要)"),
-    shareId: Optional[str] = Query(None, description="邀请者ID(可选)")
+    login_type: int = Query(..., description="登录类型: 1=facebook, 2=google, 3=usertoken, 4=email, 5=sms, 6=apple"),
+    login_id: str = Query(..., description="登录ID"),
+    login_code: Optional[str] = Query(None, description="验证码(邮箱/SMS登录时需要)"),
+    share_id: Optional[str] = Query(None, description="邀请者ID(可选)")
 ):
     """
     用户登录接口 (GET 方法)
     
     支持多种登录方式：
-    1. Facebook登录 (loginType=1, loginId=facebook_id)
-    2. Google登录 (loginType=2, loginId=google_id) 
-    3. UserToken登录 (loginType=3, loginId=usertoken)
-    4. 邮箱登录 (loginType=4, loginId=email, 需要 loginCode)
-    5. SMS登录 (loginType=5, loginId=phone, 需要 loginCode)
-    6. Apple ID登录 (loginType=6, loginId=apple_id)
+    1. Facebook登录 (login_type=1, login_id=facebook_id)
+    2. Google登录 (login_type=2, login_id=google_id) 
+    3. UserToken登录 (login_type=3, login_id=usertoken)
+    4. 邮箱登录 (login_type=4, login_id=email, 需要 login_code)
+    5. SMS登录 (login_type=5, login_id=phone, 需要 login_code)
+    6. Apple ID登录 (login_type=6, login_id=apple_id)
     
     URL 参数：
-    - loginType: 登录类型 (1-6)
-    - loginId: 登录ID
-    - loginCode: 验证码(邮箱/SMS登录时需要)
-    - shareId: 邀请者ID(可选)
+    - login_type: 登录类型 (1-6)
+    - login_id: 登录ID
+    - login_code: 验证码(邮箱/SMS登录时需要)
+    - share_id: 邀请者ID(可选)
     """
     try:
-        logger.info(f"Login attempt - Type: {loginType}, ID: {loginId}, ShareId: {shareId}")
+        logger.info(f"Login attempt - Type: {login_type}, ID: {login_id}, ShareId: {share_id}")
         
         # 验证登录参数
-        if not validate_login_params(loginType, loginId, loginCode):
+        if not validate_login_params(login_type, login_id, login_code):
             return LoginResponse(
                 status_code=0,
                 msg="无效的登录参数"
             )
         
         # 根据登录类型查找用户
-        user = find_user_by_login(loginType, loginId)
+        user = find_user_by_login(login_type, login_id)
         
         if not user:
             # 用户不存在，返回登录失败
-            logger.warning(f"User not found - Type: {loginType}, ID: {loginId}")
+            logger.warning(f"User not found - Type: {login_type}, ID: {login_id}")
             return LoginResponse(
                 status_code=0,
                 msg="用户不存在"
@@ -176,7 +176,7 @@ async def login(
         # 用户存在，生成成功登录响应
         response = LoginResponse(
             status_code=1,
-            user_id=str(user.id),
+            uid=str(user.id),
             user_name=user.facebook_name or f"User_{user.id}",
             level=user.level,
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
@@ -185,7 +185,7 @@ async def login(
             show=show,
         )
         
-        logger.info(f"Login successful - UserID: {user.id}, LoginType: {loginType}")
+        logger.info(f"Login successful - UserID: {user.id}, LoginType: {login_type}")
         return response
         
     except Exception as e:

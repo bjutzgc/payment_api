@@ -18,7 +18,7 @@ try:
     token = response.json().get("token") if response.status_code == 200 else None
     
     # Login
-    url = BASE_URL + "/api/v1/login?loginType=1&loginId=test123"
+    url = BASE_URL + "/api/v1/login?login_type=1&login_id=test123"
     response = requests.get(url)
     print("Login:", response.status_code)
     

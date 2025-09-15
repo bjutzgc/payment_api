@@ -18,7 +18,7 @@ def main():
     token = response.json().get("token") if response.status_code == 200 else None
     
     # Login
-    response = requests.get(f"{BASE_URL}/api/v1/login?loginType=1&loginId=test123")
+    response = requests.get(f"{BASE_URL}/api/v1/login?login_type=1&login_id=test123")
     print(f"Login: {response.status_code}")
     
     # Daily gift

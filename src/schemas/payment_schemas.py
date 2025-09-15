@@ -8,7 +8,7 @@ from datetime import datetime
 # ===== 基础模型 =====
 class UserBase(SQLModel):
     """用户基础模型"""
-    user_id: Optional[str] = Field(default=None, description="用户ID")
+    uid: Optional[str] = Field(default=None, description="用户ID")
     user_name: Optional[str] = Field(default=None, description="用户名")
     level: Optional[int] = Field(default=None, description="用户等级")
     avatar_url: Optional[str] = Field(default=None, description="头像URL")
@@ -42,10 +42,10 @@ class ResponseBase(SQLModel):
 
 # ===== 登录相关 =====
 class LoginRequest(SQLModel):
-    loginType: int = Field(..., description="登录类型: 1=facebook, 2=google, 3=usertoken, 4=email, 5=sms, 6=apple")
-    loginId: str = Field(..., description="登录ID")
-    loginCode: Optional[str] = Field(None, description="验证码(邮箱/SMS登录时需要)")
-    shareId: Optional[str] = Field(None, description="邀请者ID(可选)")
+    login_type: int = Field(..., description="登录类型: 1=facebook, 2=google, 3=usertoken, 4=email, 5=sms, 6=apple")
+    login_id: str = Field(..., description="登录ID")
+    login_code: Optional[str] = Field(None, description="验证码(邮箱/SMS登录时需要)")
+    share_id: Optional[str] = Field(None, description="邀请者ID(可选)")
 
 
 class LoginResponse(ResponseBase, UserBase):

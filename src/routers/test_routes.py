@@ -41,7 +41,7 @@ async def test_login():
     
     return LoginResponse(
         status_code=1,
-        user_id="test_user_123",
+        uid="test_user_123",
         user_name="Test User",
         level=10,
         daily_gift=1,
