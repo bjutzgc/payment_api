@@ -3,7 +3,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Dict, Any, Optional, List
 import logging
 from datetime import datetime, timedelta
-from jose import JWTError, jwt
+from authlib.jose import jwt
+from authlib.jose.errors import InvalidTokenError
 import secrets
 
 from ..schemas.payment_schemas import (
@@ -40,16 +41,17 @@ def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    header = {'alg': ALGORITHM}
+    encoded_jwt = jwt.encode(header, to_encode, SECRET_KEY)
     return encoded_jwt
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """验证令牌"""
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
+        claims = jwt.decode(credentials.credentials, SECRET_KEY)
+        return dict(claims)
+    except (InvalidTokenError, ValueError):
         raise HTTPException(status_code=401, detail="无效或已过期Token")
 
 
@@ -128,6 +130,7 @@ async def login(
     login_type: int = Query(..., description="登录类型: 1=facebook, 2=google, 3=usertoken, 4=email, 5=sms, 6=apple"),
     login_id: str = Query(..., description="登录ID"),
     login_code: Optional[str] = Query(None, description="验证码(邮箱/SMS登录时需要)"),
+    user_token: Optional[str] = Query(None, description="用户Token(UserToken登录时需要)"),
     share_id: Optional[str] = Query(None, description="邀请者ID(可选)")
 ):
     """
@@ -136,7 +139,7 @@ async def login(
     支持多种登录方式：
     1. Facebook登录 (login_type=1, login_id=facebook_id)
     2. Google登录 (login_type=2, login_id=google_id) 
-    3. UserToken登录 (login_type=3, login_id=usertoken)
+    3. UserToken登录 (login_type=3, user_token=usertoken)
     4. 邮箱登录 (login_type=4, login_id=email, 需要 login_code)
     5. SMS登录 (login_type=5, login_id=phone, 需要 login_code)
     6. Apple ID登录 (login_type=6, login_id=apple_id)
@@ -145,20 +148,21 @@ async def login(
     - login_type: 登录类型 (1-6)
     - login_id: 登录ID
     - login_code: 验证码(邮箱/SMS登录时需要)
+    - user_token: 用户Token(UserToken登录时需要)
     - share_id: 邀请者ID(可选)
     """
     try:
-        logger.info(f"Login attempt - Type: {login_type}, ID: {login_id}, ShareId: {share_id}")
+        logger.info(f"Login attempt - Type: {login_type}, ID: {login_id}, UserToken: {user_token[:20] + '...' if user_token else None}, ShareId: {share_id}")
         
         # 验证登录参数
-        if not validate_login_params(login_type, login_id, login_code):
+        if not validate_login_params(login_type, login_id, login_code=login_code, user_token=user_token):
             return LoginResponse(
                 status_code=0,
                 msg="无效的登录参数"
             )
         
         # 根据登录类型查找用户
-        user = find_user_by_login(login_type, login_id)
+        user = find_user_by_login(login_type, login_id, user_token=user_token)
         
         if not user:
             # 用户不存在，返回登录失败

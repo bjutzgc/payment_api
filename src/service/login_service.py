@@ -14,6 +14,55 @@ from .db_service import get_session
 
 logger = logging.getLogger("payment_api")
 
+from datetime import datetime, timezone
+from authlib.jose import jwt, JoseError
+import time
+
+
+USER_TOKEN_SECRET_KEY = "oye9cVw6rJPb3AR512HjP_cEbuFKsC7_fHFdrimylnE"  # 生产环境使用强密码
+USER_TOKEN_ALGORITHM = "HS256"
+TOKEN_EXPIRE_MINUTES = 60  # token有效期60分钟
+
+
+def verify_user_token(token: str):
+    """
+    验证JWT token（时间戳版本）
+    """
+    try:
+        claims = jwt.decode(token, USER_TOKEN_SECRET_KEY)
+        current_ts = int(time.time())
+        
+        # 手动验证过期时间
+        if 'exp' in claims and claims['exp'] < current_ts:
+            return {
+                'success': False,
+                'error': 'Token已过期',
+                'expired_at': datetime.fromtimestamp(claims['exp'], timezone.utc)
+            }
+        
+        return {
+            'success': True,
+            'user_id': claims['user_id'],
+            'issued_at': datetime.fromtimestamp(claims['iat'], timezone.utc),
+            'expires_at': datetime.fromtimestamp(claims['exp'], timezone.utc),
+            'remaining_time': claims['exp'] - current_ts  # 剩余秒数
+        }
+        
+    except JoseError as e:
+        return {
+            'success': False,
+            'error': f'Token验证失败: {str(e)}'
+        }
+
+
+def get_user_id_from_token(token: str):
+    """
+    从JWT token中获取用户ID
+    """
+    payload = verify_user_token(token)
+    if payload and 'success' in payload and payload['success']:
+        return payload['user_id']
+    return None
 
 class LoginType:
     """登录类型常量"""
@@ -25,13 +74,14 @@ class LoginType:
     APPLE = 6
 
 
-def find_user_by_login(login_type: int, login_id: str, pkg: str = 'default') -> Optional[User]:
+def find_user_by_login(login_type: int, login_id: str, user_token: Optional[str] = None, pkg: str = 'default') -> Optional[User]:
     """
     根据登录类型和登录ID查找用户
     
     Args:
         login_type: 登录类型 (1=Facebook, 2=Google, 3=UserToken, 4=Email, 5=SMS, 6=Apple)
         login_id: 登录ID
+        user_token: 用户Token(UserToken登录时使用)
         pkg: 数据库包名/类型 (向后兼容)
     
     Returns:
@@ -52,9 +102,11 @@ def find_user_by_login(login_type: int, login_id: str, pkg: str = 'default') -> 
                 return _find_user_by_account_info(session, ACCOUNT_TYPE_APPLE, login_id)
             
             elif login_type == LoginType.USER_TOKEN:
-                # UserToken登录：暂未实现
-                logger.warning(f"UserToken登录暂未实现: {login_id}")
-                return None
+                # UserToken登录：通过解析user_token获取用户ID，然后从User表中查找
+                if not user_token:
+                    logger.error("UserToken登录需要提供user_token参数")
+                    return None
+                return _find_user_by_token(session, user_token)
             
             elif login_type == LoginType.EMAIL:
                 # Email登录：暂未实现
@@ -158,7 +210,41 @@ def _find_user_by_account_info(session: Session, account_type: int, account_id: 
         return None
 
 
-def validate_login_params(login_type: int, login_id: str, login_code: Optional[str] = None) -> bool:
+def _find_user_by_token(session: Session, user_token: str) -> Optional[User]:
+    """
+    通过UserToken查找用户
+    
+    Args:
+        session: 数据库会话
+        user_token: 用户Token
+    
+    Returns:
+        User: 找到的用户对象，如果没找到返回None
+    """
+    try:
+        # 从 token 中解析用户ID
+        user_id = get_user_id_from_token(user_token)
+        if not user_id:
+            logger.warning(f"Token解析失败或无效: {user_token[:20]}...")
+            return None
+        
+        # 从User表中查找用户
+        statement = select(User).where(User.id == int(user_id))
+        user = session.exec(statement).first()
+        
+        if user:
+            logger.info(f"通过Token找到用户: User ID: {user.id}")
+        else:
+            logger.warning(f"Token解析出的用户ID不存在: {user_id}")
+        
+        return user
+        
+    except Exception as e:
+        logger.error(f"通过Token查找用户时发生错误: {str(e)}")
+        return None
+
+
+def validate_login_params(login_type: int, login_id: str, login_code: Optional[str] = None, user_token: Optional[str] = None) -> bool:
     """
     验证登录参数
     
@@ -166,6 +252,7 @@ def validate_login_params(login_type: int, login_id: str, login_code: Optional[s
         login_type: 登录类型
         login_id: 登录ID
         login_code: 验证码 (邮箱/SMS登录时需要)
+        user_token: 用户Token (UserToken登录时需要)
     
     Returns:
         bool: 参数是否有效
@@ -188,6 +275,11 @@ def validate_login_params(login_type: int, login_id: str, login_code: Optional[s
     # 验证码登录需要验证码
     if login_type in [LoginType.EMAIL, LoginType.SMS] and not login_code:
         logger.error(f"邮箱和SMS登录需要验证码")
+        return False
+    
+    # UserToken登录需要user_token
+    if login_type == LoginType.USER_TOKEN and not user_token:
+        logger.error(f"UserToken登录需要user_token参数")
         return False
     
     return True
