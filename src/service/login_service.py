@@ -36,7 +36,7 @@ def verify_user_token(token: str):
         if 'exp' in claims and claims['exp'] < current_ts:
             return {
                 'success': False,
-                'error': 'Token已过期',
+                'error': 'Token expired',
                 'expired_at': datetime.fromtimestamp(claims['exp'], timezone.utc)
             }
         
@@ -51,7 +51,7 @@ def verify_user_token(token: str):
     except JoseError as e:
         return {
             'success': False,
-            'error': f'Token验证失败: {str(e)}'
+            'error': f'Token verification failed: {str(e)}'
         }
 
 
@@ -104,26 +104,26 @@ def find_user_by_login(login_type: int, login_id: str, user_token: Optional[str]
             elif login_type == LoginType.USER_TOKEN:
                 # UserToken登录：通过解析user_token获取用户ID，然后从User表中查找
                 if not user_token:
-                    logger.error("UserToken登录需要提供user_token参数")
+                    logger.error("UserToken login requires user_token parameter")
                     return None
                 return _find_user_by_token(session, user_token)
             
             elif login_type == LoginType.EMAIL:
                 # Email登录：暂未实现
-                logger.warning(f"Email登录暂未实现: {login_id}")
+                logger.warning(f"Email login not implemented: {login_id}")
                 return None
             
             elif login_type == LoginType.SMS:
                 # SMS登录：暂未实现
-                logger.warning(f"SMS登录暂未实现: {login_id}")
+                logger.warning(f"SMS login not implemented: {login_id}")
                 return None
             
             else:
-                logger.error(f"不支持的登录类型: {login_type}")
+                logger.error(f"Unsupported login type: {login_type}")
                 return None
                 
     except Exception as e:
-        logger.error(f"查找用户时发生错误 - LoginType: {login_type}, LoginId: {login_id}, Error: {str(e)}")
+        logger.error(f"Error finding user - LoginType: {login_type}, LoginId: {login_id}, Error: {str(e)}")
         return None
 
 
@@ -144,13 +144,13 @@ def find_user_by_uid(uid: str, pkg: str = 'default') -> Optional[User]:
             user = session.exec(statement).first()
             
             if user:
-                logger.info(f"通过UID找到用户: User ID: {user.id}")
+                logger.info(f"User found by UID: User ID: {user.id}")
             else:
-                logger.warning(f"未找到用户: UID={uid}")
+                logger.warning(f"User not found: UID={uid}")
             
             return user
     except Exception as e:
-        logger.error(f"通过UID查找用户时发生错误: UID={uid}, Error: {str(e)}")
+        logger.error(f"Error finding user by UID: UID={uid}, Error: {str(e)}")
         return None
 
 
@@ -170,14 +170,14 @@ def _find_user_by_facebook_id(session: Session, facebook_id: str) -> Optional[Us
         users = session.exec(statement).all()
         
         if not users:
-            logger.info(f"未找到Facebook用户: {facebook_id}")
+            logger.info(f"Facebook user not found: {facebook_id}")
             return None
         elif len(users) == 1:
-            logger.info(f"找到Facebook用户: {facebook_id}")
+            logger.info(f"Facebook user found: {facebook_id}")
             return users[0]
         else:
             # 多个设备用户，获取最后登录的
-            logger.warning(f"发现多个Facebook用户记录，选择最后登录的用户: {facebook_id}")
+            logger.warning(f"Multiple Facebook user records found, selecting the last logged in user: {facebook_id}")
             latest_user = None
             for user in users:
                 if latest_user is None or user.last_login > latest_user.last_login:
@@ -185,7 +185,7 @@ def _find_user_by_facebook_id(session: Session, facebook_id: str) -> Optional[Us
             return latest_user
             
     except Exception as e:
-        logger.error(f"查找Facebook用户时发生错误: {facebook_id}, Error: {str(e)}")
+        logger.error(f"Error finding Facebook user: {facebook_id}, Error: {str(e)}")
         return None
 
 
@@ -214,7 +214,7 @@ def _find_user_by_account_info(session: Session, account_type: int, account_id: 
                 ACCOUNT_TYPE_GOOGLE: "Google",
                 ACCOUNT_TYPE_APPLE: "Apple"
             }.get(account_type, f"Unknown({account_type})")
-            logger.info(f"未找到{account_type_name}账户信息: {account_id}")
+            logger.info(f"{account_type_name} account info not found: {account_id}")
             return None
         
         # 根据primary_user_id查找用户
@@ -226,14 +226,14 @@ def _find_user_by_account_info(session: Session, account_type: int, account_id: 
                 ACCOUNT_TYPE_GOOGLE: "Google",
                 ACCOUNT_TYPE_APPLE: "Apple"
             }.get(account_type, f"Unknown({account_type})")
-            logger.info(f"找到{account_type_name}用户: {account_id} -> User ID: {user.id}")
+            logger.info(f"{account_type_name} user found: {account_id} -> User ID: {user.id}")
         else:
-            logger.warning(f"AccountInfo存在但User不存在: AccountType={account_type}, AccountId={account_id}, UserId={account_info.primary_user_id}")
+            logger.warning(f"AccountInfo exists but User not found: AccountType={account_type}, AccountId={account_id}, UserId={account_info.primary_user_id}")
         
         return user
         
     except Exception as e:
-        logger.error(f"通过AccountInfo查找用户时发生错误: AccountType={account_type}, AccountId={account_id}, Error: {str(e)}")
+        logger.error(f"Error finding user through AccountInfo: AccountType={account_type}, AccountId={account_id}, Error: {str(e)}")
         return None
 
 
@@ -252,7 +252,7 @@ def _find_user_by_token(session: Session, user_token: str) -> Optional[User]:
         # 从 token 中解析用户ID
         user_id = get_user_id_from_token(user_token)
         if not user_id:
-            logger.warning(f"Token解析失败或无效: {user_token[:20]}...")
+            logger.warning(f"Token parsing failed or invalid: {user_token[:20]}...")
             return None
         
         # 从User表中查找用户
@@ -260,14 +260,14 @@ def _find_user_by_token(session: Session, user_token: str) -> Optional[User]:
         user = session.exec(statement).first()
         
         if user:
-            logger.info(f"通过Token找到用户: User ID: {user.id}")
+            logger.info(f"User found through token: User ID: {user.id}")
         else:
-            logger.warning(f"Token解析出的用户ID不存在: {user_id}")
+            logger.warning(f"User ID from token does not exist: {user_id}")
         
         return user
         
     except Exception as e:
-        logger.error(f"通过Token查找用户时发生错误: {str(e)}")
+        logger.error(f"Error finding user through token: {str(e)}")
         return None
 
 
@@ -291,22 +291,22 @@ def validate_login_params(login_type: int, login_id: str, login_code: Optional[s
     ]
     
     if login_type not in valid_login_types:
-        logger.error(f"无效的登录类型: {login_type}")
+        logger.error(f"Invalid login type: {login_type}")
         return False
     
     # 验证登录ID是否为空
     if not login_id or login_id.strip() == "":
-        logger.error(f"登录ID不能为空")
+        logger.error(f"Login ID cannot be empty")
         return False
     
     # 验证码登录需要验证码
     if login_type in [LoginType.EMAIL, LoginType.SMS] and not login_code:
-        logger.error(f"邮箱和SMS登录需要验证码")
+        logger.error(f"Email and SMS login require verification code")
         return False
     
     # UserToken登录需要user_token
     if login_type == LoginType.USER_TOKEN and not user_token:
-        logger.error(f"UserToken登录需要user_token参数")
+        logger.error(f"UserToken login requires user_token parameter")
         return False
     
     return True

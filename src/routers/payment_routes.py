@@ -21,7 +21,7 @@ from ..web_config import settings
 from ..constants import *
 from ..service.login_service import find_user_by_login, validate_login_params, LoginType as ServiceLoginType, find_user_by_uid
 from ..service.payment_service import process_payment_success, process_payment_failure, get_payment_history
-from ..item_configs import get_item_tokens, get_item_name, get_all_items, get_available_store_items
+from ..item_configs import get_item_name, get_available_store_items
 from ..service.game_service import get_user_object, get_user_ext
 
 logger = logging.getLogger("payment_api")
@@ -53,7 +53,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
         claims = jwt.decode(credentials.credentials, SECRET_KEY)
         return dict(claims)
     except (InvalidTokenError, ValueError):
-        raise HTTPException(status_code=401, detail="无效或已过期Token")
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
 def get_client_info(request: Request) -> Dict[str, str]:
@@ -96,7 +96,7 @@ async def get_token(request: TokenRequest):
         if request.appId != APP_ID:
             return TokenResponse(
                 return_code=0,
-                msg="无效的AppId"
+                msg="Invalid AppId"
             )
         
         # 生成令牌载荷
@@ -112,7 +112,7 @@ async def get_token(request: TokenRequest):
         response = TokenResponse(
             return_code=1,
             token=access_token,
-            msg="Token获取成功"
+            msg="Token generation successful"
         )
         
         logger.info(f"Token generated successfully - AppId: {request.appId}")
@@ -122,7 +122,7 @@ async def get_token(request: TokenRequest):
         logger.error(f"Token generation error: {str(e)}")
         return TokenResponse(
             return_code=0,
-            msg=f"Token获取失败: {str(e)}"
+            msg=f"Token generation failed: {str(e)}"
         )
 
 
@@ -159,7 +159,7 @@ async def login(
         if not validate_login_params(login_type, login_id, login_code=login_code, user_token=user_token):
             return LoginResponse(
                 status_code=0,
-                msg="无效的登录参数"
+                msg="Invalid login parameters"
             )
         
         # 根据登录类型查找用户
@@ -170,7 +170,7 @@ async def login(
             logger.warning(f"User not found - Type: {login_type}, ID: {login_id}")
             return LoginResponse(
                 status_code=0,
-                msg="用户不存在"
+                msg="User not found"
             )
         user_ext = get_user_ext(user.id)
         show = 0
@@ -194,7 +194,7 @@ async def login(
             cash=str(cash),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
-            msg="登录成功",
+            msg="Login successful",
             show=show,
         )
         
@@ -205,7 +205,7 @@ async def login(
         logger.error(f"Login error: {str(e)}")
         return LoginResponse(
             status_code=0,
-            msg=f"登录失败: {str(e)}"
+            msg=f"Login failed: {str(e)}"
         )
 
 
@@ -247,9 +247,7 @@ async def get_store_items(request: StoreItemsRequest):
     try:
         logger.info(f"Store items request - UID: {request.uid}")
         
-        # 获取用户信息，默认使用 'default' 包名
-        user = get_user_object('default', f'test_user_{request.uid}')
-        
+        user = find_user_by_uid(request.uid)
         # 默认值（如果用户不存在或者访问失败）
         user_coins = 0
         user_level = 1.0
@@ -323,9 +321,9 @@ async def payment_success(request: PaymentSuccessRequest, fastapi_request: Reque
             is_first_charge = result.get('is_first_charge', False)
             purchase_count = result.get('purchase_count', 0)
             
-            msg = f"支付成功，奖励已发放！获得{tokens_granted}第三货币"
+            msg = f"Payment successful, rewards distributed! Received {tokens_granted} tokens"
             if is_first_charge:
-                msg += "(首充奖励)"
+                msg += " (First charge bonus)"
             
             response = PaymentSuccessResponse(
                 return_code=1,
@@ -336,7 +334,7 @@ async def payment_success(request: PaymentSuccessRequest, fastapi_request: Reque
             response = PaymentSuccessResponse(
                 return_code=0,
                 err_code=500,
-                msg=result.get("error", "处理失败")
+                msg=result.get("error", "Processing failed")
             )
             logger.error(f"Payment processing failed - OrderID: {request.order_id}, Error: {result.get('error')}")
         
@@ -347,7 +345,7 @@ async def payment_success(request: PaymentSuccessRequest, fastapi_request: Reque
         return PaymentSuccessResponse(
             return_code=0,
             err_code=500,
-            msg=f"处理失败: {str(e)}"
+            msg=f"Processing failed: {str(e)}"
         )
 
 
@@ -384,14 +382,14 @@ async def payment_failure(request: PaymentFailureRequest, fastapi_request: Reque
         if result["success"]:
             response = PaymentFailureResponse(
                 return_code=1,
-                msg="支付失败记录已保存"
+                msg="Payment failure recorded"
             )
             logger.info(f"Payment failure recorded - OrderID: {request.order_id}, Error: {request.web_pay_error_code}")
         else:
             response = PaymentFailureResponse(
                 return_code=0,
                 err_code=500,
-                msg=result.get("error", "记录失败")
+                msg=result.get("error", "Recording failed")
             )
             logger.error(f"Payment failure recording failed - OrderID: {request.order_id}, Error: {result.get('error')}")
         
@@ -402,7 +400,7 @@ async def payment_failure(request: PaymentFailureRequest, fastapi_request: Reque
         return PaymentFailureResponse(
             return_code=0,
             err_code=500,
-            msg=f"记录失败: {str(e)}"
+            msg=f"Recording failed: {str(e)}"
         )
 
 
@@ -427,7 +425,7 @@ async def get_order_history(request: OrderHistoryRequest):
                 item_id = int(payment['item_id'])
                 item_name = get_item_name(item_id)
             except (ValueError, TypeError):
-                item_name = f"未知商品 {payment['item_id']}"
+                item_name = f"Unknown item {payment['item_id']}"
             
             orders.append({
                 "order_id": payment["order_id"],
@@ -451,7 +449,7 @@ async def get_order_history(request: OrderHistoryRequest):
         return OrderHistoryResponse(
             status_code=0,
             data=[],
-            msg=f"获取失败: {str(e)}"
+            msg=f"Failed to retrieve: {str(e)}"
         )
 
 
@@ -486,7 +484,7 @@ async def refresh_user_info(
             logger.warning(f"User not found for refresh - UID: {request.uid}")
             return RefreshUserInfoResponse(
                 status_code=0,
-                msg="用户不存在"
+                msg="User not found"
             )
         
         # 生成并返回登录响应
@@ -498,7 +496,7 @@ async def refresh_user_info(
         logger.error(f"Refresh user info error: {str(e)}")
         return RefreshUserInfoResponse(
             status_code=0,
-            msg=f"刷新失败: {str(e)}"
+            msg=f"Refresh failed: {str(e)}"
         )
 
 
@@ -528,7 +526,7 @@ def _generate_login_response(user):
             cash=str(cash),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
-            msg="刷新成功",
+            msg="Refresh successful",
             show=show,
         )
         
@@ -537,7 +535,7 @@ def _generate_login_response(user):
         logger.error(f"Generate login response error: {str(e)}")
         return LoginResponse(
             status_code=0,
-            msg=f"生成响应失败: {str(e)}"
+            msg=f"Failed to generate response: {str(e)}"
         )
 
 
@@ -567,7 +565,7 @@ def _generate_refresh_response(user):
             cash=str(cash),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
-            msg="刷新成功",
+            msg="Refresh successful",
             show=show,
         )
         
@@ -576,5 +574,5 @@ def _generate_refresh_response(user):
         logger.error(f"Generate refresh response error: {str(e)}")
         return RefreshUserInfoResponse(
             status_code=0,
-            msg=f"生成响应失败: {str(e)}"
+            msg=f"Failed to generate response: {str(e)}"
         )

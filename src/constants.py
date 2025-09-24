@@ -13,6 +13,7 @@ USER_EXT_KEY = 'ue_%d'
 K_USER_TOTAL_PURCHASE = 'u_t_purchase'
 K_USER_CASH = 'cash'
 K_USER_CASH_FREE = 'cash_free'
+K_WEB_PURCHASE = 'web_purchase'
 
 APP_ID = PKG_VEGAS
 

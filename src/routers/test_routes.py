@@ -35,9 +35,9 @@ async def ping():
 async def test_login():
     """测试登录响应数据结构"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试登录接口...")
+    logger.info("Testing login interface...")
     
     return LoginResponse(
         status_code=1,
@@ -46,7 +46,7 @@ async def test_login():
         level=10,
         daily_gift=1,
         avatar_url="https://example.com/avatar.jpg",
-        msg="测试登录成功"
+        msg="Test login successful"
     )
 
 
@@ -54,13 +54,13 @@ async def test_login():
 async def test_daily_gift():
     """测试每日礼物响应数据结构"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试每日礼物接口...")
+    logger.info("Testing daily gift interface...")
     
     return DailyGiftResponse(
         return_code=1,
-        msg="测试领取成功"
+        msg="Test gift claim successful"
     )
 
 
@@ -68,9 +68,9 @@ async def test_daily_gift():
 async def test_store_items():
     """测试商城商品列表响应数据结构"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试商城商品接口...")
+    logger.info("Testing store items interface...")
     
     # 模拟商品数据
     test_items = [
@@ -83,7 +83,7 @@ async def test_store_items():
             "act_items": [
                 {
                     "id": 100,
-                    "name": "金币包",
+                    "name": "Coin Pack",
                     "num": 10
                 }
             ]
@@ -102,7 +102,7 @@ async def test_store_items():
         return_code=1,
         is_first_pay=1,
         items=test_items,
-        msg="测试商品列表"
+        msg="Test item list"
     )
 
 
@@ -110,13 +110,13 @@ async def test_store_items():
 async def test_payment_success():
     """测试支付成功响应数据结构"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试支付成功接口...")
+    logger.info("Testing payment success interface...")
     
     return PaymentSuccessResponse(
         return_code=1,
-        msg="测试支付成功，奖励已发放"
+        msg="Test payment successful, rewards distributed"
     )
 
 
@@ -124,14 +124,14 @@ async def test_payment_success():
 async def test_payment_failure():
     """测试支付失败响应数据结构"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试支付失败接口...")
+    logger.info("Testing payment failure interface...")
     
     return PaymentFailureResponse(
         return_code=1,
         err_code=500,
-        msg="测试支付失败记录已保存"
+        msg="Test payment failure recorded"
     )
 
 
@@ -139,14 +139,14 @@ async def test_payment_failure():
 async def test_database_info():
     """测试数据库配置信息"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试数据库配置信息...")
+    logger.info("Testing database configuration info...")
     
     databases = get_available_databases()
     
     return {
-        "message": "数据库配置信息",
+        "message": "Database configuration info",
         "total_databases": len(databases),
         "databases": {
             db_type: {
@@ -163,14 +163,14 @@ async def test_database_info():
 async def test_token():
     """测试Token响应数据结构"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试Token接口...")
+    logger.info("Testing token interface...")
     
     return TokenResponse(
         return_code=1,
         token="test_token_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
-        msg="测试Token获取成功"
+        msg="Test token obtained successfully"
     )
 
 
@@ -178,15 +178,15 @@ async def test_token():
 async def test_order_history():
     """测试订单历史响应数据结构"""
     if not settings.DEBUG:
-        raise HTTPException(status_code=403, detail="仅在开发环境可用")
+        raise HTTPException(status_code=403, detail="Only available in development environment")
     
-    logger.info("测试订单历史接口...")
+    logger.info("Testing order history interface...")
     
     # 模拟订单数据
     test_orders = [
         {
             "order_id": "test_order_001",
-            "item_name": "测试金币包 1000",
+            "item_name": "Test Coin Pack 1000",
             "order_time": "2025-09-04 16:30:00",
             "order_status": "completed",
             "price": 19.99,
@@ -194,7 +194,7 @@ async def test_order_history():
         },
         {
             "order_id": "test_order_002",
-            "item_name": "测试钻石包 500",
+            "item_name": "Test Diamond Pack 500",
             "order_time": "2025-09-03 14:20:00",
             "order_status": "completed",
             "price": 29.99,
@@ -205,5 +205,5 @@ async def test_order_history():
     return OrderHistoryResponse(
         status_code=1,
         data=test_orders,
-        msg="测试订单历史数据"
+        msg="Test order history data"
     )

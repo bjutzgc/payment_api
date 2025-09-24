@@ -9,7 +9,8 @@ from datetime import datetime
 import logging
 import json
 
-from ..models import User, WebchargePaymentLog
+from ..constants import *
+from ..models import User, WebchargePaymentLog, UserExt
 from .db_service import get_session
 from .redis_service import get_redis_db_user
 from ..item_configs import get_item_tokens, is_high_level_user
@@ -54,16 +55,19 @@ class PaymentProcessor:
             existing_log = self._get_payment_log(order_id)
             if existing_log and existing_log.status == PaymentStatus.SUCCESS:
                 logger.warning(f"Order already processed - OrderID: {order_id}")
-                return {"success": False, "error": "订单已处理"}
+                return {"success": False, "error": "Order already processed"}
             
             # 2. 获取或创建用户信息
             user = self._get_user(uid)
             if not user:
                 user = self._create_test_user(uid)
                 logger.info(f"Created test user - UID: {uid}")
+            user_ext = self._get_user_ext(uid)
+            if not user_ext:
+                user_ext = {}
             
             # 3. 检查用户是否为首充用户（购买次数为0）
-            is_first_charge = user.purchase_count == 0
+            is_first_charge = user_ext.get(K_WEB_PURCHASE, 0) & (1 << (item_id - 1)) > 0
             
             # 4. 根据用户状态计算实际获得的第三货币数量
             tokens = get_item_tokens(
@@ -76,10 +80,13 @@ class PaymentProcessor:
             # 5. 检查用户是否有权限购买该商品（7-8号商品需要高级用户）
             if item_id > 6 and not is_high_level_user(user.coins, float(user.level)):
                 logger.warning(f"User {uid} cannot access high-level item {item_id}")
-                return {"success": False, "error": "该商品仅对高级用户开放"}
+                return {"success": False, "error": "This item is only available to premium users"}
             
             logger.info(f"Calculated tokens - ItemID: {item_id}, Tokens: {tokens}, IsFirstCharge: {is_first_charge}")
             
+            if not is_first_charge:
+                user_ext[K_WEB_PURCHASE] |= 1 << (item_id - 1)
+                self._save_user_ext(uid, user_ext)
             # 6. 记录支付成功日志
             payment_log = self._create_payment_log(
                 order_id=order_id,
@@ -96,18 +103,16 @@ class PaymentProcessor:
             
             # 7. 更新用户金币和购买次数
             old_coins = user.coins
-            user.coins += tokens
-            user.purchase_count += 1
             
             # 8. 提交数据库事务
             self.session.add(payment_log)
-            self.session.add(user)
             self.session.commit()
             
+            
             # 9. 发送奖励到收件箱
-            reward_reason = f"购买{item_id}号商品奖励"
+            reward_reason = f"Reward for purchasing item {item_id}"
             if is_first_charge:
-                reward_reason += "（首充奖励）"
+                reward_reason += " (First charge bonus)"
             
             inbox_success = send_reward_to_inbox('default', uid, tokens, reward_reason)
             if not inbox_success:
@@ -130,7 +135,7 @@ class PaymentProcessor:
         except Exception as e:
             self.session.rollback()
             logger.error(f"Payment success processing error - OrderID: {order_id}, Error: {str(e)}")
-            return {"success": False, "error": f"处理失败: {str(e)}"}
+            return {"success": False, "error": f"Processing failed: {str(e)}"}
     
     def process_payment_failure(self, payment_data: Dict[str, Any]) -> Dict[str, Any]:
         """处理支付失败逻辑"""
@@ -180,7 +185,7 @@ class PaymentProcessor:
         except Exception as e:
             self.session.rollback()
             logger.error(f"Payment failure processing error - OrderID: {order_id}, Error: {str(e)}")
-            return {"success": False, "error": f"处理失败: {str(e)}"}
+            return {"success": False, "error": f"Processing failed: {str(e)}"}
     
     def _get_payment_log(self, order_id: str) -> Optional[WebchargePaymentLog]:
         """获取支付日志信息"""
@@ -191,6 +196,28 @@ class PaymentProcessor:
         """获取用户信息"""
         statement = select(User).where(User.id == user_id)
         return self.session.exec(statement).first()
+
+    def _get_user_ext(self, user_id: int):
+        """获取用户扩展信息"""
+        user_ext = None
+        try:
+            ue = self.redis_client.get(USER_EXT_KEY % user_id)
+            if ue and ue is not None:
+                user_ext = json.loads(ue)
+        except Exception as e:
+            logger.error(f"Error getting use ext: {e}")
+        if user_ext is None:
+            statement = select(UserExt).where(UserExt.user_id == user_id)
+            ext = self.session.exec(statement).first()
+            user_ext = json.loads(ext.data) if ext and ext.data else None
+        return user_ext
+
+    def _save_user_ext(self, user_id: int, data: Dict[str, Any]):
+        """保存用户扩展信息"""
+        try:
+            self.redis_client.set(USER_EXT_KEY % user_id, json.dumps(data))
+        except Exception as e:
+            logger.error(f"Error saving user ext: {e}")
     
     def _create_test_user(self, user_id: int) -> User:
         """创建测试用户"""
