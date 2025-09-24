@@ -94,4 +94,13 @@ curl -X POST "$BASE_URL/api/v1/orders/history" \
   -d '{"uid": "123"}' | jq .
 echo ""
 
+echo "=== 刷新用户 ==="
+  curl -X POST "$BASE_URL/api/v1/refresh" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+      "uid": "123"
+    }' | jq .
+  echo ""
+
 echo "✅ 所有测试完成!"

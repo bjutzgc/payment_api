@@ -131,7 +131,7 @@ class WebchargePaymentLog(SQLModel, table=True):
     # 失败专用字段
     web_lang: Optional[str] = Field(max_length=10, default=None)
     browser_lang: Optional[str] = Field(max_length=10, default=None)
-    web_pay_error_code: Optional[str] = Field(max_length=128, default=None)
+    web_pay_error_code: Optional[str] = Field(default=None, sa_column=Column(Text))
 
     # 可扩展字段（JSON）
     ext: Optional[dict] = Field(default=None, sa_column=Column(JSON))
