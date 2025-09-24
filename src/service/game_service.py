@@ -2,11 +2,12 @@ import json
 import datetime
 import time
 from typing import Optional, List, Dict, Any
+from sqlalchemy.sql.functions import user
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_
 
-from ..models import User, ActControl, Inbox, FacebookEmail, UserLounge, WebStore, InboxLog
+from ..models import User, ActControl, Inbox, FacebookEmail, UserExt, UserLounge, WebStore, InboxLog
 from .db_service import get_session, get_async_session
 from .redis_service import get_redis_db_user, get_redis_db_fb
 from ..constants import *
@@ -51,6 +52,35 @@ def get_user_object(pkg: str, fb_id: str) -> Optional[User]:
             return fb_user
 
 
+
+def get_ext_from_db(pkg: str, user_id: str) -> Optional[UserExt]:
+    """根据Facebook ID获取用户对象"""
+    if not user_id:
+        return None
+    
+    with get_session(pkg) as session:
+        statement = (
+            select(UserExt)
+            .where(UserExt.user_id == int(user_id))
+        )
+        users = session.exec(statement).all()
+        
+        if not users:
+            return None
+        elif len(users) == 1:
+            return users[0]
+        else:
+            # 多个设备用户，获取最后登录的
+            logger.warning('user_msg...multiple device users ext get last login.')
+            fb_user = None
+            for user in users:
+                if fb_user is None:
+                    fb_user = user
+                elif user.last_login > fb_user.last_login:
+                    fb_user = user
+            return fb_user
+
+
 def generate_user_info(pkg: str, data: Dict[str, Any], fb_user: User):
     """生成用户信息"""
     user_id = fb_user.id
@@ -69,21 +99,26 @@ def generate_user_info(pkg: str, data: Dict[str, Any], fb_user: User):
     generate_coupon_info(pkg, data, user_id)
 
 
-def get_total_purchase(user_id: int) -> float:
+def get_user_ext(user_id: int):
     """获取用户总购买金额"""
-    total_purchase = 0.0
     redis_client = get_redis_db_user()
+    user_ext = {}
     if redis_client:
         try:
             ue = redis_client.get(USER_EXT_KEY % user_id)
             if ue:
-                user_ext_data = json.loads(ue)
-                total_purchase = float(user_ext_data.get(K_USER_TOTAL_PURCHASE, 0))
+                user_ext = json.loads(ue)
         except Exception as e:
-            logger.error(f"Error getting total purchase: {e}")
+            logger.error(f"Error getting use ext: {e}")
     else:
         logger.error("Cannot get redis client for user data.")
-    return total_purchase
+    return user_ext
+
+
+def get_total_purchase(user_id: int) -> float:
+    """获取用户总购买金额"""
+    user_ext = get_user_ext(user_id)
+    return user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
 
 
 def get_online_status(user_id: int) -> bool:

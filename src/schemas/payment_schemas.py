@@ -11,6 +11,8 @@ class UserBase(SQLModel):
     uid: Optional[str] = Field(default=None, description="用户ID")
     user_name: Optional[str] = Field(default=None, description="用户名")
     level: Optional[int] = Field(default=None, description="用户等级")
+    coins: Optional[str] = Field(default=None, description="金币数")
+    cash: Optional[str] = Field(default=None, description="第三货币数")
     avatar_url: Optional[str] = Field(default=None, description="头像URL")
     show: Optional[int] = Field(default=None, description="是否展示商店")
 
@@ -138,3 +140,13 @@ class TokenRequest(SQLModel):
 class TokenResponse(ResponseBase):
     """Token获取响应"""
     token: Optional[str] = Field(default=None, description="访问令牌，有效期3小时")
+
+
+# ===== 刷新用户信息相关 =====
+class RefreshUserInfoRequest(SQLModel):
+    """刷新用户信息请求"""
+    uid: str = Field(..., description="用户ID")
+
+
+class RefreshUserInfoResponse(ResponseBase, UserBase):
+    daily_gift: Optional[int] = Field(default=None, description="每日礼物状态: 0=不可领取, 1=可领取")

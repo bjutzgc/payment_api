@@ -18,19 +18,19 @@ try:
     token = response.json().get("token") if response.status_code == 200 else None
     
     # Login
-    url = BASE_URL + "/api/v1/login?login_type=1&login_id=test123"
+    url = BASE_URL + "/api/v1/login?login_type=1&login_id=123"
     response = requests.get(url)
     print("Login:", response.status_code)
     
     # Daily gift
     url = BASE_URL + "/api/v1/daily_gift"
-    data = {"uid": "test123"}
+    data = {"uid": "123"}
     response = requests.post(url, json=data)
     print("Daily gift:", response.status_code)
     
     # Store items
     url = BASE_URL + "/api/v1/store/items"
-    data = {"uid": "test123"}
+    data = {"uid": "123"}
     response = requests.post(url, json=data)
     print("Store items:", response.status_code)
     
@@ -40,7 +40,7 @@ try:
         headers = {"Authorization": "Bearer " + token}
         data = {
             "order_id": "test_001",
-            "uid": "test123",
+            "uid": "123",
             "item_id": 1,
             "price": 19.99,
             "currency": "USD",
@@ -61,7 +61,7 @@ try:
     
     # Order history
     url = BASE_URL + "/api/v1/orders/history"
-    data = {"uid": "test123"}
+    data = {"uid": "123"}
     response = requests.post(url, json=data)
     print("Order history:", response.status_code)
     

@@ -19,6 +19,12 @@ class User(SQLModel, table=True):
     last_login: datetime
     purchase_count: int = Field(default=0)
 
+class UserExt(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "user_ext"  # type: ignore
+    id: int = Field(primary_key=True)
+    user_id: int = Field(unique=True)
+    data: Optional[str] = None
+    last_login: datetime = Field(default_factory=datetime.utcnow)
 
 class ActControl(SQLModel, table=True):
     __tablename__: ClassVar[str] = "act_control"  # type: ignore

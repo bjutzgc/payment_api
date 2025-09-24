@@ -7,7 +7,7 @@ from authlib.jose import jwt, JoseError
 # 配置参数
 USER_TOKEN_SECRET_KEY = "oye9cVw6rJPb3AR512HjP_cEbuFKsC7_fHFdrimylnE"  # 生产环境使用强密码
 USER_TOKEN_ALGORITHM = "HS256"
-TOKEN_EXPIRE_MINUTES = 60  # token有效期60分钟
+TOKEN_EXPIRE_MINUTES = 24 * 60 * 30  # token有效期60分钟
 
 
 
@@ -72,6 +72,8 @@ def get_user_id_from_token(token: str):
         return payload['user_id']
     return None
 
-token = create_jwt_token("1579840")
-print(token)
-print(get_user_id_from_token(token))
+UIDS = [709, 703, 424, 389, 223, 220, 219, 217, 215, 214]
+
+for uid in UIDS:
+    print(create_jwt_token(str(uid)))
+

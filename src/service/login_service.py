@@ -127,6 +127,33 @@ def find_user_by_login(login_type: int, login_id: str, user_token: Optional[str]
         return None
 
 
+def find_user_by_uid(uid: str, pkg: str = 'default') -> Optional[User]:
+    """
+    根据用户ID查找用户
+    
+    Args:
+        uid: 用户ID
+        pkg: 数据库包名/类型 (向后兼容)
+    
+    Returns:
+        User: 找到的用户对象，如果没找到返回None
+    """
+    try:
+        with get_session(pkg) as session:
+            statement = select(User).where(User.id == int(uid))
+            user = session.exec(statement).first()
+            
+            if user:
+                logger.info(f"通过UID找到用户: User ID: {user.id}")
+            else:
+                logger.warning(f"未找到用户: UID={uid}")
+            
+            return user
+    except Exception as e:
+        logger.error(f"通过UID查找用户时发生错误: UID={uid}, Error: {str(e)}")
+        return None
+
+
 def _find_user_by_facebook_id(session: Session, facebook_id: str) -> Optional[User]:
     """
     通过Facebook ID查找用户

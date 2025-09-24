@@ -14,14 +14,15 @@ from ..schemas.payment_schemas import (
     PaymentSuccessRequest, PaymentSuccessResponse,
     PaymentFailureRequest, PaymentFailureResponse,
     OrderHistoryRequest, OrderHistoryResponse,
-    TokenRequest, TokenResponse
+    TokenRequest, TokenResponse,
+    RefreshUserInfoRequest, RefreshUserInfoResponse
 )
 from ..web_config import settings
-from ..constants import APP_ID
-from ..service.login_service import find_user_by_login, validate_login_params, LoginType as ServiceLoginType
+from ..constants import *
+from ..service.login_service import find_user_by_login, validate_login_params, LoginType as ServiceLoginType, find_user_by_uid
 from ..service.payment_service import process_payment_success, process_payment_failure, get_payment_history
 from ..item_configs import get_item_tokens, get_item_name, get_all_items, get_available_store_items
-from ..service.game_service import get_user_object, get_total_purchase
+from ..service.game_service import get_user_object, get_user_ext
 
 logger = logging.getLogger("payment_api")
 
@@ -171,18 +172,26 @@ async def login(
                 status_code=0,
                 msg="用户不存在"
             )
-        user_total_purchase = get_total_purchase(user.id)
+        user_ext = get_user_ext(user.id)
         show = 0
-        if 300 < user_total_purchase < 2000:
-            if (user.id // 10000) % 10 == 0:
-                show = 1 
-        
+        user_total_purchase = 0.0
+        cash = 0.0
+        if user_ext:
+            user_total_purchase = user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
+            if 300 < user_total_purchase < 2000:
+                if (user.id // 10000) % 10 == 0:
+                    show = 1
+                cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
+                
+        coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
         # 用户存在，生成成功登录响应
         response = LoginResponse(
             status_code=1,
             uid=str(user.id),
             user_name=user.facebook_name or f"User_{user.id}",
             level=user.level,
+            coins= str(coins),
+            cash=str(cash),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
             msg="登录成功",
@@ -443,4 +452,129 @@ async def get_order_history(request: OrderHistoryRequest):
             status_code=0,
             data=[],
             msg=f"获取失败: {str(e)}"
+        )
+
+
+@router.post("/refresh", response_model=RefreshUserInfoResponse)
+async def refresh_user_info(
+    request: RefreshUserInfoRequest,
+    token_data: dict = Depends(verify_token)
+):
+    """
+    刷新用户信息接口 (POST 方法)
+    
+    只需要提供用户ID和认证Token
+    
+    Headers:
+    - Authorization: Bearer {token}
+    
+    Request Body:
+    {
+        "uid": "user_id"     # 用户ID
+    }
+    
+    响应格式与登录接口相同
+    """
+    try:
+        logger.info(f"Refresh user info attempt - UID: {request.uid}")
+        
+        # 根据用户ID查找用户
+        user = find_user_by_uid(request.uid)
+        
+        if not user:
+            # 用户不存在，返回失败
+            logger.warning(f"User not found for refresh - UID: {request.uid}")
+            return RefreshUserInfoResponse(
+                status_code=0,
+                msg="用户不存在"
+            )
+        
+        # 生成并返回登录响应
+        response = _generate_refresh_response(user)
+        logger.info(f"User info refreshed successfully - UserID: {user.id}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Refresh user info error: {str(e)}")
+        return RefreshUserInfoResponse(
+            status_code=0,
+            msg=f"刷新失败: {str(e)}"
+        )
+
+
+def _generate_login_response(user):
+    """生成登录响应的通用函数"""
+    try:
+        user_ext = get_user_ext(user.id)
+        show = 0
+        user_total_purchase = 0.0
+        cash = 0.0
+        if user_ext:
+            user_total_purchase = user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
+            if 300 < user_total_purchase < 2000:
+                if (user.id // 10000) % 10 == 0:
+                    show = 1
+                cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
+                
+        coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
+        
+        # 用户存在，生成成功登录响应
+        response = LoginResponse(
+            status_code=1,
+            uid=str(user.id),
+            user_name=user.facebook_name or f"User_{user.id}",
+            level=user.level,
+            coins=str(coins),
+            cash=str(cash),
+            daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
+            avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
+            msg="刷新成功",
+            show=show,
+        )
+        
+        return response
+    except Exception as e:
+        logger.error(f"Generate login response error: {str(e)}")
+        return LoginResponse(
+            status_code=0,
+            msg=f"生成响应失败: {str(e)}"
+        )
+
+
+def _generate_refresh_response(user):
+    """生成刷新用户信息响应的通用函数"""
+    try:
+        user_ext = get_user_ext(user.id)
+        show = 0
+        user_total_purchase = 0.0
+        cash = 0.0
+        if user_ext:
+            user_total_purchase = user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
+            if 300 < user_total_purchase < 2000:
+                if (user.id // 10000) % 10 == 0:
+                    show = 1
+                cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
+                
+        coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
+        
+        # 用户存在，生成成功响应
+        response = RefreshUserInfoResponse(
+            status_code=1,
+            uid=str(user.id),
+            user_name=user.facebook_name or f"User_{user.id}",
+            level=user.level,
+            coins=str(coins),
+            cash=str(cash),
+            daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
+            avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
+            msg="刷新成功",
+            show=show,
+        )
+        
+        return response
+    except Exception as e:
+        logger.error(f"Generate refresh response error: {str(e)}")
+        return RefreshUserInfoResponse(
+            status_code=0,
+            msg=f"生成响应失败: {str(e)}"
         )

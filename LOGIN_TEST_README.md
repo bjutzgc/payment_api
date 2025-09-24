@@ -43,61 +43,31 @@ curl -X GET "http://localhost:8000/api/v1/login?login_type=6&login_id=apple_test
   -H "accept: application/json"
 ```
 
+## 刷新用户信息接口测试命令
+
+### 刷新用户信息（需要先获取Token）
+```bash
+# 先获取token
+curl -X POST "http://localhost:8000/api/v1/token" \
+  -H "Content-Type: application/json" \
+  -d '{"appId": "com.funtriolimited.slots.casino.free"}'
+
+# 使用token刷新用户信息
+curl -X POST "http://localhost:8000/api/v1/refresh" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "login_type": 1,
+    "login_id": "facebook_test_id_12345"
+  }'
+```
+
 ## 参数验证测试
 
 ### 测试无效登录类型
 ```bash
 curl -X GET "http://localhost:8000/api/v1/login?login_type=99&login_id=test" \
   -H "accept: application/json"
-```
-
-### 测试缺少必需参数
-```bash
-# 缺少login_id
-curl -X GET "http://localhost:8000/api/v1/login?login_type=1" \
-  -H "accept: application/json"
-
-# UserToken登录缺少user_token
-curl -X GET "http://localhost:8000/api/v1/login?login_type=3&login_id=test" \
-  -H "accept: application/json"
-
-# 邮箱登录缺少验证码
-curl -X GET "http://localhost:8000/api/v1/login?login_type=4&login_id=test@example.com" \
-  -H "accept: application/json"
-```
-
-## 测试结果说明
-
-### 正常响应结构
-```json
-{
-  "uid": "12345",
-  "user_name": "User_12345",
-  "level": 1,
-  "avatar_url": "https://example.com/avatar.jpg",
-  "show": 0,
-  "return_code": null,
-  "status_code": 1,
-  "err_code": null,
-  "msg": "登录成功",
-  "daily_gift": 1
-}
-```
-
-### 错误响应结构
-```json
-{
-  "uid": null,
-  "user_name": null,
-  "level": null,
-  "avatar_url": null,
-  "show": null,
-  "return_code": null,
-  "status_code": 0,
-  "err_code": null,
-  "msg": "用户不存在",
-  "daily_gift": null
-}
 ```
 
 ## 登录类型说明
@@ -118,4 +88,21 @@ curl -X GET "http://localhost:8000/api/v1/login?login_type=4&login_id=test@examp
 ## API文档访问
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
-- 健康检查: http://localhost:8000/health
+
+## 正常响应结构
+```json
+{
+  "uid": "12345",
+  "user_name": "User_12345",
+  "level": 1,
+  "avatar_url": "https://example.com/avatar.jpg",
+  "show": 0,
+  "return_code": null,
+  "status_code": 1,
+  "err_code": null,
+  "msg": "登录成功",
+  "coins": "1000",
+  "cash": "0",
+  "daily_gift": 1
+}
+```
