@@ -23,7 +23,7 @@ echo ""
 
 # 3. 登录测试
 echo "=== 登录测试 ==="
-curl -X GET "$BASE_URL/api/v1/login?loginType=1&loginId=test123" | jq .
+curl -X GET "$BASE_URL/api/v1/login?login_type=3&login_id=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTAwMDEiLCJpYXQiOjE3NTg3ODkzOTUsImV4cCI6MTc2MTM4MTM5NSwiaXNzIjoieW91ci1hcHAtbmFtZSIsImF1ZCI6InlvdXItYXBwLWF1ZGllbmNlIn0.QMdlMOJtpw6V5J6n1CkXFFB0vR8fcEg7p8liUA-ixqk" | jq .
 echo ""
 
 # 4. 每日奖励

@@ -35,6 +35,7 @@ TOKEN_EXPIRY_HOURS = settings.JWT_ACCESS_TOKEN_EXPIRE_HOURS
 # HTTP Bearer验证器
 security = HTTPBearer()
 
+DEUBG_SHOW = settings.DEBUG
 
 def create_access_token(data: dict) -> str:
     """创建访问令牌"""
@@ -170,7 +171,7 @@ async def login(
                 msg="User not found"
             )
         user_ext = get_user_ext(user.id)
-        show = 0
+        show = DEUBG_SHOW
         user_total_purchase = 0.0
         cash = 0.0
         if user_ext:
@@ -178,7 +179,7 @@ async def login(
             if 300 < user_total_purchase < 2000:
                 if (user.id // 10000) % 10 == 0:
                     show = 1
-                cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
+            cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
                 
         coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
         # 用户存在，生成成功登录响应
@@ -491,51 +492,11 @@ async def refresh_user_info(
             msg=f"Refresh failed: {str(e)}"
         )
 
-
-def _generate_login_response(user):
-    """生成登录响应的通用函数"""
-    try:
-        user_ext = get_user_ext(user.id)
-        show = 0
-        user_total_purchase = 0.0
-        cash = 0.0
-        if user_ext:
-            user_total_purchase = user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
-            if 300 < user_total_purchase < 2000:
-                if (user.id // 10000) % 10 == 0:
-                    show = 1
-                cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
-                
-        coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
-        
-        # 用户存在，生成成功登录响应
-        response = LoginResponse(
-            status_code=1,
-            uid=str(user.id),
-            user_name=user.facebook_name or f"User_{user.id}",
-            level=user.level,
-            coins=str(coins),
-            cash=str(cash),
-            daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
-            avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
-            msg="Refresh successful",
-            show=show,
-        )
-        
-        return response
-    except Exception as e:
-        logger.error(f"Generate login response error: {str(e)}")
-        return LoginResponse(
-            status_code=0,
-            msg=f"Failed to generate response: {str(e)}"
-        )
-
-
 def _generate_refresh_response(user):
     """生成刷新用户信息响应的通用函数"""
     try:
         user_ext = get_user_ext(user.id)
-        show = 0
+        show = DEUBG_SHOW
         user_total_purchase = 0.0
         cash = 0.0
         if user_ext:
@@ -543,7 +504,7 @@ def _generate_refresh_response(user):
             if 300 < user_total_purchase < 2000:
                 if (user.id // 10000) % 10 == 0:
                     show = 1
-                cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
+            cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
                 
         coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
         
