@@ -74,14 +74,13 @@ class LoginType:
     APPLE = 6
 
 
-def find_user_by_login(login_type: int, login_id: str, user_token: Optional[str] = None, pkg: str = 'default') -> Optional[User]:
+def find_user_by_login(login_type: int, login_id: str, pkg: str = 'default') -> Optional[User]:
     """
     根据登录类型和登录ID查找用户
     
     Args:
         login_type: 登录类型 (1=Facebook, 2=Google, 3=UserToken, 4=Email, 5=SMS, 6=Apple)
         login_id: 登录ID
-        user_token: 用户Token(UserToken登录时使用)
         pkg: 数据库包名/类型 (向后兼容)
     
     Returns:
@@ -102,11 +101,7 @@ def find_user_by_login(login_type: int, login_id: str, user_token: Optional[str]
                 return _find_user_by_account_info(session, ACCOUNT_TYPE_APPLE, login_id)
             
             elif login_type == LoginType.USER_TOKEN:
-                # UserToken登录：通过解析user_token获取用户ID，然后从User表中查找
-                if not user_token:
-                    logger.error("UserToken login requires user_token parameter")
-                    return None
-                return _find_user_by_token(session, user_token)
+                return _find_user_by_token(session, user_token=login_id)
             
             elif login_type == LoginType.EMAIL:
                 # Email登录：暂未实现
@@ -271,7 +266,7 @@ def _find_user_by_token(session: Session, user_token: str) -> Optional[User]:
         return None
 
 
-def validate_login_params(login_type: int, login_id: str, login_code: Optional[str] = None, user_token: Optional[str] = None) -> bool:
+def validate_login_params(login_type: int, login_id: str, login_code: Optional[str] = None) -> bool:
     """
     验证登录参数
     
@@ -302,11 +297,6 @@ def validate_login_params(login_type: int, login_id: str, login_code: Optional[s
     # 验证码登录需要验证码
     if login_type in [LoginType.EMAIL, LoginType.SMS] and not login_code:
         logger.error(f"Email and SMS login require verification code")
-        return False
-    
-    # UserToken登录需要user_token
-    if login_type == LoginType.USER_TOKEN and not user_token:
-        logger.error(f"UserToken login requires user_token parameter")
         return False
     
     return True

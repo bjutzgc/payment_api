@@ -21,7 +21,7 @@ curl -X GET "http://localhost:8000/api/v1/login?login_type=2&login_id=google_tes
 ### 3. UserToken登录
 ```bash
 # 注意：需要替换为真实有效的JWT token
-curl -X GET "http://localhost:8000/api/v1/login?login_type=3&login_id=dummy&user_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMjM0NSwidGVzdCI6dHJ1ZSwiaWF0IjoxNjk5OTk5OTk5LCJleHAiOjE3MDAwMDM1OTl9.test_signature" \
+curl -X GET "http://localhost:8000/api/v1/login?login_type=3&login_id=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMjM0NSwidGVzdCI6dHJ1ZSwiaWF0IjoxNjk5OTk5OTk5LCJleHAiOjE3MDAwMDM1OTl9.test_signature" \
   -H "accept: application/json"
 ```
 
@@ -73,7 +73,7 @@ curl -X GET "http://localhost:8000/api/v1/login?login_type=99&login_id=test" \
 ## 登录类型说明
 - `login_type=1`: Facebook登录，需要 `login_id` (Facebook ID)
 - `login_type=2`: Google登录，需要 `login_id` (Google ID)
-- `login_type=3`: UserToken登录，需要 `login_id` (任意值) + `user_token` (JWT Token)
+- `login_type=3`: UserToken登录，需要 `login_id` (任意值)
 - `login_type=4`: 邮箱登录，需要 `login_id` (邮箱地址) + `login_code` (验证码)
 - `login_type=5`: SMS登录，需要 `login_id` (手机号) + `login_code` (验证码)
 - `login_type=6`: Apple登录，需要 `login_id` (Apple ID)

@@ -37,7 +37,7 @@ test_login 2 "google_test_id_67890" "Google登录"
 
 # 3. UserToken登录测试（使用测试token）
 USER_TOKEN="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMjM0NSwidGVzdCI6dHJ1ZSwiaWF0IjoxNjk5OTk5OTk5LCJleHAiOjE3MDAwMDM1OTl9.test_signature"
-test_login 3 "dummy_login_id" "UserToken登录" "user_token=${USER_TOKEN}"
+test_login 3 "dummy_login_id" "UserToken登录" "login_id=${USER_TOKEN}"
 
 # 4. 邮箱登录测试
 test_login 4 "test@example.com" "邮箱登录" "login_code=123456"

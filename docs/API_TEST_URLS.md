@@ -30,7 +30,7 @@ GET http://localhost:8000/api/v1/login
 **支持的登录类型:**
 - `login_type=1`: Facebook登录，需要 `login_id` (Facebook ID)
 - `login_type=2`: Google登录，需要 `login_id` (Google ID)
-- `login_type=3`: UserToken登录，需要 `login_id` (任意值) + `user_token` (JWT Token)
+- `login_type=3`: UserToken登录，需要 `login_id` (任意值)
 - `login_type=4`: 邮箱登录，需要 `login_id` (邮箱地址) + `login_code` (验证码)
 - `login_type=5`: SMS登录，需要 `login_id` (手机号) + `login_code` (验证码)
 - `login_type=6`: Apple登录，需要 `login_id` (Apple ID)

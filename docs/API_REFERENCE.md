@@ -56,7 +56,6 @@
   - 6: Apple登录
 - `login_id` (string, required): 登录ID
 - `login_code` (string, optional): 验证码(邮箱/SMS登录时需要)
-- `user_token` (string, optional): 用户Token(UserToken登录时需要)
 - `share_id` (string, optional): 邀请者ID
 
 **响应示例**:
