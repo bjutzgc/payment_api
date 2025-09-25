@@ -35,7 +35,7 @@ TOKEN_EXPIRY_HOURS = settings.JWT_ACCESS_TOKEN_EXPIRE_HOURS
 # HTTP Bearer验证器
 security = HTTPBearer()
 
-DEUBG_SHOW = settings.DEBUG
+DEBUG_SHOW = 0
 
 def create_access_token(data: dict) -> str:
     """创建访问令牌"""
@@ -171,7 +171,7 @@ async def login(
                 msg="User not found"
             )
         user_ext = get_user_ext(user.id)
-        show = DEUBG_SHOW
+        show = DEBUG_SHOW
         user_total_purchase = 0.0
         cash = 0.0
         if user_ext:
@@ -496,7 +496,7 @@ def _generate_refresh_response(user):
     """生成刷新用户信息响应的通用函数"""
     try:
         user_ext = get_user_ext(user.id)
-        show = DEUBG_SHOW
+        show = DEBUG_SHOW
         user_total_purchase = 0.0
         cash = 0.0
         if user_ext:
