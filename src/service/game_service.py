@@ -321,18 +321,7 @@ def get_utc_ts_str(local_ts: datetime.datetime) -> str:
 
 
 def send_reward_to_inbox(pkg: str, uid: int, tokens: int, reason: str = "购买奖励") -> bool:
-    """
-    发送奖励到玩家收件箱
-    
-    Args:
-        pkg: 包名
-        uid: 用户ID
-        tokens: 奖励的第三货币数量
-        reason: 奖励原因
-    
-    Returns:
-        bool: 是否发送成功
-    """
+    return True
     try:
         with get_session(pkg) as session:
 

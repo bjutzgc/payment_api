@@ -91,7 +91,6 @@ curl -X GET "http://localhost:8000/api/v1/store/items" \
 ├── src/                        # 源代码目录
 │   ├── routers/                # 路由模块
 │   │   ├── payment_routes.py   # 支付相关API路由
-│   │   └── test_routes.py      # 测试用路由
 │   ├── schemas/                # Pydantic 数据模式
 │   │   └── payment_schemas.py  # 支付相关数据模型
 │   ├── service/                # 业务逻辑服务层

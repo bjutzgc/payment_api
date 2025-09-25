@@ -30,14 +30,14 @@ echo ""
 echo "=== 每日奖励 ==="
 curl -X POST "$BASE_URL/api/v1/daily_gift" \
   -H "Content-Type: application/json" \
-  -d '{"uid": "123"}' | jq .
+  -d '{"uid": "10001"}' | jq .
 echo ""
 
 # 5. 商城信息
 echo "=== 商城信息 ==="
 curl -X POST "$BASE_URL/api/v1/store/items" \
   -H "Content-Type: application/json" \
-  -d '{"uid": "123"}' | jq .
+  -d '{"uid": "10001"}' | jq .
 echo ""
 
 # 6. 支付成功（需要token）
@@ -48,7 +48,7 @@ if [ ! -z "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
     -H "Authorization: Bearer $TOKEN" \
     -d '{
       "order_id": "test_order_001",
-      "uid": "123",
+      "uid": "10001",
       "item_id": 1,
       "price": 19.99,
       "currency": "USD",
@@ -67,7 +67,7 @@ if [ ! -z "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
     -H "Authorization: Bearer $TOKEN" \
     -d '{
       "order_id": "test_order_002",
-      "uid": "123",
+      "uid": "10001",
       "item_id": 1,
       "price": 19.99,
       "currency": "USD",
@@ -91,7 +91,7 @@ fi
 echo "=== 历史订单 ==="
 curl -X POST "$BASE_URL/api/v1/orders/history" \
   -H "Content-Type: application/json" \
-  -d '{"uid": "123"}' | jq .
+  -d '{"uid": "10001"}' | jq .
 echo ""
 
 echo "=== 刷新用户 ==="
@@ -99,7 +99,7 @@ echo "=== 刷新用户 ==="
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $TOKEN" \
     -d '{
-      "uid": "123"
+      "uid": "10001"
     }' | jq .
   echo ""
 

@@ -13,8 +13,15 @@ default_async_engine = None
 def create_engine_for_url(database_url: str, echo: bool = False):
     """为给定的URL创建数据库引擎"""
     if 'mysql+aiomysql' in database_url or 'postgresql+asyncpg' in database_url:
-        # 异步引擎
-        async_engine = create_async_engine(database_url, echo=echo)
+        # 异步引擎 - 添加连接池配置
+        # pool_recycle 设置为3600秒(1小时)，防止MySQL自动断开连接
+        # pool_pre_ping 设置为True，使用前检查连接有效性
+        async_engine = create_async_engine(
+            database_url, 
+            echo=echo,
+            pool_recycle=3600,
+            pool_pre_ping=True
+        )
         
         # 为表创建创建同步版本
         if 'mysql+aiomysql' in database_url:
@@ -24,11 +31,21 @@ def create_engine_for_url(database_url: str, echo: bool = False):
         else:
             sync_url = database_url
         
-        sync_engine = create_engine(sync_url, echo=echo)
+        sync_engine = create_engine(
+            sync_url, 
+            echo=echo,
+            pool_recycle=3600,
+            pool_pre_ping=True
+        )
         return sync_engine, async_engine
     else:
-        # 同步引擎（SQLite等）
-        sync_engine = create_engine(database_url, echo=echo)
+        # 同步引擎（SQLite等）- 添加连接池配置
+        sync_engine = create_engine(
+            database_url, 
+            echo=echo,
+            pool_recycle=3600,
+            pool_pre_ping=True
+        )
         return sync_engine, None
 
 

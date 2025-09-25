@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from .web_config import settings
-from .routers.test_routes import router as test_router
 from .routers.payment_routes import router as payment_router
 
 # 配置日志

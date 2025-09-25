@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query, Body, Depends, Header, Request
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional
 import logging
 from datetime import datetime, timedelta
 from authlib.jose import jwt
@@ -19,10 +19,9 @@ from ..schemas.payment_schemas import (
 )
 from ..web_config import settings
 from ..constants import *
-from ..service.login_service import find_user_by_login, validate_login_params, LoginType as ServiceLoginType, find_user_by_uid
-from ..service.payment_service import process_payment_success, process_payment_failure, get_payment_history
-from ..item_configs import get_item_name, get_available_store_items
-from ..service.game_service import get_user_object, get_user_ext
+from ..service.login_service import find_user_by_login, validate_login_params, find_user_by_uid
+from ..service.payment_service import process_payment_success, process_payment_failure, get_payment_history, get_item_name, get_available_store_items
+from ..service.game_service import get_user_ext
 
 logger = logging.getLogger("payment_api")
 
@@ -249,7 +248,6 @@ async def get_store_items(request: StoreItemsRequest):
         # 默认值（如果用户不存在或者访问失败）
         user_coins = 0
         user_level = 1.0
-        is_first_charge_user = True  # 默认为首充用户
         
         if user:
             user_coins = user.coins
@@ -260,15 +258,11 @@ async def get_store_items(request: StoreItemsRequest):
             logger.info(f"User not found - UID: {request.uid}, using default values")
         
         # 获取用户可用的商品列表
-        items = get_available_store_items(
-            user_coins=user_coins,
-            user_level=user_level,
-            is_first_charge_user=is_first_charge_user
-        )
+        items = get_available_store_items(user)
         
         response = StoreItemsResponse(
             return_code=1,
-            is_first_pay=1 if is_first_charge_user else 0,
+            is_first_pay=0,
             items=items
         )
         

@@ -289,14 +289,13 @@ def validate_login_params(login_type: int, login_id: str, login_code: Optional[s
         logger.error(f"Invalid login type: {login_type}")
         return False
     
-    # 验证登录ID是否为空
     if not login_id or login_id.strip() == "":
         logger.error(f"Login ID cannot be empty")
         return False
     
-    # 验证码登录需要验证码
     if login_type in [LoginType.EMAIL, LoginType.SMS] and not login_code:
         logger.error(f"Email and SMS login require verification code")
         return False
     
     return True
+    

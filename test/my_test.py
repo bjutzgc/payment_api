@@ -1,4 +1,4 @@
-# config.py (两边共享)
+# -*- coding: utf-8 -*-
 
 import time
 from datetime import datetime, timezone
@@ -72,7 +72,7 @@ def get_user_id_from_token(token: str):
         return payload['user_id']
     return None
 
-UIDS = [709, 703, 424, 389, 223, 220, 219, 217, 215, 214]
+UIDS = [709, 703, 424, 389, 223, 220, 219, 217, 215, 214, 709]
 
 for uid in UIDS:
     print(create_jwt_token(str(uid)))

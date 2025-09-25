@@ -4,6 +4,7 @@
 完全基于新的 WebchargePaymentLog 模型，不再依赖旧版 WebStore
 """
 from typing import Optional, Dict, Any
+from sqlalchemy import Select, func
 from sqlmodel import Session, select
 from datetime import datetime
 import logging
@@ -13,10 +14,169 @@ from ..constants import *
 from ..models import User, WebchargePaymentLog, UserExt
 from .db_service import get_session
 from .redis_service import get_redis_db_user
-from ..item_configs import get_item_tokens, is_high_level_user
 from .game_service import send_reward_to_inbox
 
 logger = logging.getLogger("payment_api")
+
+
+STORE_ITEMS_CONFIG = [
+    {
+        "id": 8,
+        "price": 999.99,
+        "name": "Mythic Pack",
+        "normal_bonus": 0.06,
+        "base_tokens": 1000,
+        "first_bonus": 0.25
+    },
+    {
+        "id": 7,
+        "price": 599.99,
+        "name": "Legend Pack",
+        "normal_bonus": 0.05,
+        "base_tokens": 600,
+        "first_bonus": 0.25
+    },
+    {
+        "id": 6,
+        "price": 399.99,
+        "name": "Deluxe Pack",
+        "normal_bonus": 0.04,
+        "base_tokens": 400,
+        "first_bonus": 0.25
+    },
+    {
+        "id": 5,
+        "price": 199.99,
+        "name": "Premium Pack",
+        "normal_bonus": 0.02,
+        "base_tokens": 200,
+        "first_bonus": 0.15
+    },
+    {
+        "id": 4,
+        "price": 99.99,
+        "name": "Elite Pack",
+        "normal_bonus": 0.01,
+        "base_tokens": 100,
+        "first_bonus": 0.15
+    },
+    {
+        "id": 3,
+        "price": 49.99,
+        "name": "Advanced Pack",
+        "normal_bonus": 0,
+        "base_tokens": 50,
+        "first_bonus": 0.1
+    },
+    {
+        "id": 2,
+        "price": 29.99,
+        "name": "Growth Pack",
+        "normal_bonus": 0,
+        "base_tokens": 30,
+        "first_bonus": 0.1
+    },
+    {
+        "id": 1,
+        "price": 19.99,
+        "name": "Starter Pack",
+        "normal_bonus": 0,
+        "base_tokens": 20,
+        "first_bonus": 0.1
+    }
+]
+
+def calculate_tokens(base_tokens: int, bonus_rate: float) -> int:
+    bonus_tokens = int(base_tokens * bonus_rate)
+    return base_tokens + bonus_tokens
+
+
+def is_high_level_user(user) -> bool:
+    return False
+#   return user_coins >= 10000 and user_level >= 99.99
+
+
+def get_available_store_items(user) -> list:
+    # Determine the number of items based on user level
+    if is_high_level_user(user):
+        # High-level user: 8 items
+        available_items = STORE_ITEMS_CONFIG[2:]
+    else:
+        # Regular user: first 6 items
+        available_items = STORE_ITEMS_CONFIG[2:]
+    
+    # Build the response data
+    items = []
+    with get_session("vegas_ro") as session:
+        for item in available_items:
+            count = session.scalar(
+                select(func.coalesce(func.count(WebchargePaymentLog.id), 0))
+                .where(
+                    WebchargePaymentLog.uid == user.id,
+                    WebchargePaymentLog.item_id == item["id"]
+                )
+            ) or 0
+            actual_tokens = calculate_tokens(item["base_tokens"], item["normal_bonus"] if count else item["first_bonus"])
+            
+            items.append({
+                "id": item["id"],
+                "name": item["name"],
+                "price": item["price"],
+                "tokens": actual_tokens,
+                "base_tokens": item["base_tokens"],
+                "bonus_rate": item["normal_bonus"] ,
+                "first_rate": item["first_bonus"] if not count else 0.0,
+                "act_items": []  # Additional items, can be configured as needed
+            })
+    
+    return items
+
+
+def get_item_config(item_id, user, is_first_charge):
+    for item in STORE_ITEMS_CONFIG:
+        if item["id"] == item_id:
+            # Check if the user can access this item
+            if item_id > 6 and not is_high_level_user(user):
+                # Regular users cannot access items 7-8
+                return {
+                    "name": f"Unavailable Item {item_id}",
+                    "tokens": 0,
+                    "base_tokens": 0,
+                    "bonus_percent": 0
+                }
+            
+            # Use normal_bonus
+            bonus_rate = item["normal_bonus"] if not is_first_charge else item["first_bonus"]
+            actual_tokens = calculate_tokens(item["base_tokens"], bonus_rate)
+            
+            return {
+                "name": item["name"],
+                "tokens": actual_tokens,
+                "base_tokens": item["base_tokens"],
+                "bonus_percent": int(bonus_rate * 100)
+            }
+
+    # Default configuration
+    return {
+        "name": f"Unknown Item {item_id}",
+        "tokens": 100,  # Default 100 tokens
+        "base_tokens": 100,
+        "bonus_percent": 0
+    }
+
+
+def get_item_tokens(item_id, user, is_first_charge):
+    config = get_item_config(item_id, user, is_first_charge)
+    return config["tokens"]
+
+
+def get_item_name(item_id: int) -> str:
+    # First check the new configuration
+    for item in STORE_ITEMS_CONFIG:
+        if item["id"] == item_id:
+            return item["name"]
+    
+    return f"unknown item {item_id}"
 
 
 class PaymentStatus:
@@ -62,31 +222,20 @@ class PaymentProcessor:
             if not user:
                 user = self._create_test_user(uid)
                 logger.info(f"Created test user - UID: {uid}")
-            user_ext = self._get_user_ext(uid)
-            if not user_ext:
-                user_ext = {}
-            
+
             # 3. 检查用户是否为首充用户（购买次数为0）
-            is_first_charge = user_ext.get(K_WEB_PURCHASE, 0) & (1 << (item_id - 1)) > 0
+            is_first_charge = self._get_first_charge(user.id, item_id=item_id)
             
             # 4. 根据用户状态计算实际获得的第三货币数量
-            tokens = get_item_tokens(
-                item_id=item_id,
-                user_coins=user.coins,
-                user_level=float(user.level),
-                is_first_charge=is_first_charge
-            )
+            tokens = get_item_tokens(item_id, user, is_first_charge)
             
             # 5. 检查用户是否有权限购买该商品（7-8号商品需要高级用户）
-            if item_id > 6 and not is_high_level_user(user.coins, float(user.level)):
+            if item_id > 6 and not is_high_level_user(user):
                 logger.warning(f"User {uid} cannot access high-level item {item_id}")
                 return {"success": False, "error": "This item is only available to premium users"}
             
             logger.info(f"Calculated tokens - ItemID: {item_id}, Tokens: {tokens}, IsFirstCharge: {is_first_charge}")
             
-            if not is_first_charge:
-                user_ext[K_WEB_PURCHASE] |= 1 << (item_id - 1)
-                self._save_user_ext(uid, user_ext)
             # 6. 记录支付成功日志
             payment_log = self._create_payment_log(
                 order_id=order_id,
@@ -108,11 +257,12 @@ class PaymentProcessor:
             self.session.add(payment_log)
             self.session.commit()
             
-            
+            self._set_user_cash(uid, tokens)
             # 9. 发送奖励到收件箱
             reward_reason = f"Reward for purchasing item {item_id}"
             if is_first_charge:
                 reward_reason += " (First charge bonus)"
+
             
             inbox_success = send_reward_to_inbox('default', uid, tokens, reward_reason)
             if not inbox_success:
@@ -197,27 +347,23 @@ class PaymentProcessor:
         statement = select(User).where(User.id == user_id)
         return self.session.exec(statement).first()
 
-    def _get_user_ext(self, user_id: int):
-        """获取用户扩展信息"""
-        user_ext = None
-        try:
-            ue = self.redis_client.get(USER_EXT_KEY % user_id)
-            if ue and ue is not None:
-                user_ext = json.loads(ue)
-        except Exception as e:
-            logger.error(f"Error getting use ext: {e}")
-        if user_ext is None:
-            statement = select(UserExt).where(UserExt.user_id == user_id)
-            ext = self.session.exec(statement).first()
-            user_ext = json.loads(ext.data) if ext and ext.data else None
-        return user_ext
+    def _set_user_cash(self, user_id, tokens):
+        cash=self.redis_client.get("jwins_cash_" + str(user_id))
+        if cash:
+            self.redis_client.set("jwins_cash_" + str(user_id), int(cash) + tokens)
+        else:
+            self.redis_client.set("jwins_cash_" + str(user_id), tokens)
 
-    def _save_user_ext(self, user_id: int, data: Dict[str, Any]):
-        """保存用户扩展信息"""
-        try:
-            self.redis_client.set(USER_EXT_KEY % user_id, json.dumps(data))
-        except Exception as e:
-            logger.error(f"Error saving user ext: {e}")
+    def _get_first_charge(self, user_id: int, item_id) -> int:
+        """获取用户第一次充值的额外奖励"""
+        count = self.session.scalar(
+                select(func.coalesce(func.count(WebchargePaymentLog.id), 0))
+                .where(
+                    WebchargePaymentLog.uid == user_id,
+                    WebchargePaymentLog.item_id == item_id
+                )
+            ) or 0
+        return count <= 0
     
     def _create_test_user(self, user_id: int) -> User:
         """创建测试用户"""
