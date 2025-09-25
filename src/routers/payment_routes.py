@@ -189,7 +189,7 @@ async def login(
             user_name=user.facebook_name or f"User_{user.id}",
             level=user.level,
             coins= str(coins),
-            cash=str(cash),
+            cash=str(cash / 100),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
             msg="Login successful",
@@ -515,7 +515,7 @@ def _generate_refresh_response(user):
             user_name=user.facebook_name or f"User_{user.id}",
             level=user.level,
             coins=str(coins),
-            cash=str(cash),
+            cash=str(cash / 100),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
             msg="Refresh successful",
