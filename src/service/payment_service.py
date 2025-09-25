@@ -167,7 +167,7 @@ def get_item_config(item_id, user, is_first_charge):
 
 def get_item_tokens(item_id, user, is_first_charge):
     config = get_item_config(item_id, user, is_first_charge)
-    return config["tokens"] * 100
+    return config["tokens"]
 
 
 def get_item_name(item_id: int) -> str:
