@@ -34,7 +34,7 @@ def create_redis_pool():
 
 def get_redis_db_user(pkg: str = 'vegas') -> Optional[redis.Redis]:
     """获取用户相关的Redis连接"""
-    return REDIS.get(f'{pkg}_user')
+    return REDIS.get(f'{pkg}')
 
 
 def get_redis_db_fb(pkg: str = 'vegas_fb') -> Optional[redis.Redis]:
