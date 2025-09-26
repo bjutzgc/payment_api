@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_
 
 from ..models import User, ActControl, Inbox, FacebookEmail, UserExt, UserLounge, WebStore, InboxLog
-from .db_service import get_session, get_async_session
+from .db_service import get_session, get_readonly_session
 from .redis_service import get_redis_db_user, get_redis_db_fb
 from ..constants import *
 import logging
@@ -29,7 +29,7 @@ def get_user_object(pkg: str, fb_id: str) -> Optional[User]:
     if not fb_id:
         return None
     
-    with get_session(pkg) as session:
+    with get_readonly_session() as session:
         statement = (
             select(User)
             .where(User.facebook_id == fb_id)
@@ -58,7 +58,7 @@ def get_ext_from_db(pkg: str, user_id: str) -> Optional[UserExt]:
     if not user_id:
         return None
     
-    with get_session(pkg) as session:
+    with get_readonly_session() as session:
         statement = (
             select(UserExt)
             .where(UserExt.user_id == int(user_id))

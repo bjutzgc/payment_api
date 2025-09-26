@@ -253,8 +253,7 @@ async def get_store_items(request: StoreItemsRequest):
         if user:
             user_coins = user.coins
             user_level = float(user.level)
-            is_first_charge_user = user.purchase_count == 0
-            logger.info(f"User found - UID: {user.id}, Coins: {user_coins}, Level: {user_level}, FirstCharge: {is_first_charge_user}")
+            logger.info(f"User found - UID: {user.id}, Coins: {user_coins}, Level: {user_level}")
         else:
             logger.info(f"User not found - UID: {request.uid}, using default values")
         
@@ -267,7 +266,7 @@ async def get_store_items(request: StoreItemsRequest):
             items=items
         )
         
-        logger.info(f"Store items returned - UID: {request.uid}, Items count: {len(items)}, FirstCharge: {is_first_charge_user}")
+        logger.info(f"Store items returned - UID: {request.uid}, Items count: {len(items)}")
         return response
         
     except Exception as e:

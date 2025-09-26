@@ -10,7 +10,7 @@ from ..models import User, AccountInfo
 from ..constants import (
     ACCOUNT_TYPE_FACEBOOK, ACCOUNT_TYPE_GOOGLE, ACCOUNT_TYPE_APPLE
 )
-from .db_service import get_session
+from .db_service import get_readonly_session
 
 logger = logging.getLogger("payment_api")
 
@@ -87,7 +87,7 @@ def find_user_by_login(login_type: int, login_id: str, pkg: str = 'default') -> 
         User: 找到的用户对象，如果没找到返回None
     """
     try:
-        with get_session(pkg) as session:
+        with get_readonly_session() as session:
             if login_type == LoginType.FACEBOOK:
                 # Facebook登录：从User表中查找facebook_id
                 return _find_user_by_facebook_id(session, login_id)
@@ -134,7 +134,7 @@ def find_user_by_uid(uid: str, pkg: str = 'default') -> Optional[User]:
         User: 找到的用户对象，如果没找到返回None
     """
     try:
-        with get_session(pkg) as session:
+        with get_readonly_session() as session:
             statement = select(User).where(User.id == int(uid))
             user = session.exec(statement).first()
             

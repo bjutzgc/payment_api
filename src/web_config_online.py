@@ -1,8 +1,8 @@
 from typing import Dict, Any
-from .web_config import BaseWebConfig
+from pydantic_settings import BaseSettings
 
 
-class OnlineConfig(BaseWebConfig):
+class OnlineConfig(BaseSettings):
     """生产环境配置"""
     
     # 应用设置
@@ -22,13 +22,11 @@ class OnlineConfig(BaseWebConfig):
             "host": "redis-cluster-vegas.prod.internal",
             "port": 6379,
             "db_id": 0,
-            "password": "redis_prod_password"
         },
         "vegas_fb": {
             "host": "redis-cluster-vegas.prod.internal", 
             "port": 6379,
             "db_id": 1,
-            "password": "redis_prod_password"
         }
     }
     
@@ -39,11 +37,7 @@ class OnlineConfig(BaseWebConfig):
     JWT_ACCESS_TOKEN_EXPIRE_HOURS: int = 3
     
     # CORS设置 - 生产环境限制域名
-    ALLOW_ORIGINS: list = [
-        "https://payment.yourdomain.com",
-        "https://api.yourdomain.com",
-        "https://admin.yourdomain.com"
-    ]
+    ALLOW_ORIGINS: list = ["*"]
     ALLOW_CREDENTIALS: bool = True
     ALLOW_METHODS: list = ["GET", "POST", "PUT", "DELETE"]
     ALLOW_HEADERS: list = ["Content-Type", "Authorization"]
@@ -51,12 +45,12 @@ class OnlineConfig(BaseWebConfig):
     # 生产环境特有配置
     ENABLE_DOCS: bool = False  # 生产环境禁用API文档
     ENABLE_TEST_ROUTES: bool = False  # 生产环境禁用测试路由
-    
-    # 性能设置
-    WORKERS: int = 4
-    MAX_CONNECTIONS: int = 100
-    
-    # 安全设置
-    SECURE_HEADERS: bool = True
-    RATE_LIMIT_ENABLED: bool = True
-    RATE_LIMIT_PER_MINUTE: int = 100
+
+
+    # API设置
+    API_V1_PREFIX: str = "/api/v1"
+    PROJECT_NAME: str = "Payment API"
+    PROJECT_VERSION: str = "2.0.0"
+
+settings = OnlineConfig()
+

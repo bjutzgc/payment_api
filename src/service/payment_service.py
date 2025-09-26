@@ -12,7 +12,7 @@ import json
 
 from ..constants import *
 from ..models import User, WebchargePaymentLog, UserExt
-from .db_service import get_session
+from .db_service import get_readonly_session, get_readwrite_session
 from .redis_service import get_redis_db_user
 from .game_service import send_reward_to_inbox
 
@@ -107,7 +107,7 @@ def get_available_store_items(user) -> list:
     
     # Build the response data
     items = []
-    with get_session("vegas_ro") as session:
+    with get_readonly_session() as session:
         for item in available_items:
             count = session.scalar(
                 select(func.coalesce(func.count(WebchargePaymentLog.id), 0))
@@ -405,14 +405,14 @@ class PaymentProcessor:
 
 def process_payment_success(payment_data: Dict[str, Any], pkg: str = 'default') -> Dict[str, Any]:
     """处理支付成功的便捷函数"""
-    with get_session(pkg) as session:
+    with get_readwrite_session() as session:
         processor = PaymentProcessor(session)
         return processor.process_payment_success(payment_data)
 
 
 def process_payment_failure(payment_data: Dict[str, Any], pkg: str = 'default') -> Dict[str, Any]:
     """处理支付失败的便捷函数"""
-    with get_session(pkg) as session:
+    with get_readwrite_session() as session:
         processor = PaymentProcessor(session)
         return processor.process_payment_failure(payment_data)
 
@@ -420,7 +420,7 @@ def process_payment_failure(payment_data: Dict[str, Any], pkg: str = 'default') 
 def get_payment_history(user_id: int, limit: int = 50, pkg: str = 'default') -> list:
     """获取用户支付历史"""
     try:
-        with get_session(pkg) as session:
+        with get_readonly_session() as session:
             statement = select(WebchargePaymentLog).where(
                 WebchargePaymentLog.uid == str(user_id)
             ).limit(limit)
