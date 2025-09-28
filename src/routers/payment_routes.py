@@ -7,6 +7,7 @@ from authlib.jose import jwt
 from authlib.jose.errors import InvalidTokenError
 import secrets
 
+
 from ..schemas.payment_schemas import (
     LoginRequest, LoginResponse, 
     DailyGiftRequest, DailyGiftResponse,
@@ -81,6 +82,24 @@ def get_client_info(request: Request) -> Dict[str, str]:
         "accept_language": accept_language
     }
 
+def get_show_info(user):
+    user_ext = get_user_ext(user.id)
+    show = DEBUG_SHOW
+    cash = 0.0
+    if user_ext:
+        user_total_purchase = user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
+        if 300 < user_total_purchase < 2000:
+            if (user.id // 10000) % 10 == 0:
+                show = 1
+        cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
+            
+    coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
+    show = 0
+    return {
+        "show": show,
+        "cash": cash,
+        "coins": coins
+    }
 
 @router.post("/token", response_model=TokenResponse)
 async def get_token(request: TokenRequest):
@@ -170,30 +189,21 @@ async def login(
                 status_code=0,
                 msg="User not found"
             )
-        user_ext = get_user_ext(user.id)
-        show = DEBUG_SHOW
-        user_total_purchase = 0.0
-        cash = 0.0
-        if user_ext:
-            user_total_purchase = user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
-            if 300 < user_total_purchase < 2000:
-                if (user.id // 10000) % 10 == 0:
-                    show = 1
-            cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
-                
-        coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
+        
+        info = get_show_info(user)
         # 用户存在，生成成功登录响应
         response = LoginResponse(
             status_code=1,
             uid=str(user.id),
             user_name=user.facebook_name or f"User_{user.id}",
             level=user.level,
-            coins= str(coins),
-            cash=str(cash / 100),
+            vip_level=user.vip_level,
+            coins= str(info["coins"]),
+            cash=str(info["cash"] / 100),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
             msg="Login successful",
-            show=show,
+            show=info["show"],
         )
         
         logger.info(f"Login successful - UserID: {user.id}, LoginType: {login_type}")
@@ -494,31 +504,20 @@ async def refresh_user_info(
 def _generate_refresh_response(user):
     """生成刷新用户信息响应的通用函数"""
     try:
-        user_ext = get_user_ext(user.id)
-        show = DEBUG_SHOW
-        user_total_purchase = 0.0
-        cash = 0.0
-        if user_ext:
-            user_total_purchase = user_ext.get(K_USER_TOTAL_PURCHASE, 0.0)
-            if 300 < user_total_purchase < 2000:
-                if (user.id // 10000) % 10 == 0:
-                    show = 1
-            cash = user_ext.get(K_USER_CASH, 0.0) + user_ext.get(K_USER_CASH_FREE, 0.0)
-                
-        coins = (-user.coins * 1000000000) if user.coins < 0 else user.coins
-        
+        info = get_show_info(user)
         # 用户存在，生成成功响应
         response = RefreshUserInfoResponse(
             status_code=1,
             uid=str(user.id),
             user_name=user.facebook_name or f"User_{user.id}",
             level=user.level,
-            coins=str(coins),
-            cash=str(cash / 100),
+            vip_level=user.vip_level,
+            coins=str(info["coins"]),
+            cash=str(info["cash"] / 100),
             daily_gift=1,  # 1表示可以领取每日礼物（需要根据实际逻辑判断）
             avatar_url="https://example.com/avatar.jpg",  # 可以根据用户信息设置
             msg="Refresh successful",
-            show=show,
+            show=info["show"],
         )
         
         return response

@@ -10,6 +10,7 @@ class UserBase(SQLModel):
     uid: Optional[str] = Field(default=None, description="User ID")
     user_name: Optional[str] = Field(default=None, description="Username")
     level: Optional[int] = Field(default=None, description="User level")
+    vip_level: Optional[int] = Field(default=None, description="Vip level")
     coins: Optional[str] = Field(default=None, description="Coin count")
     cash: Optional[str] = Field(default=None, description="Token count")
     avatar_url: Optional[str] = Field(default=None, description="Avatar URL")
